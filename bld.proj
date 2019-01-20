@@ -1,0 +1,4 @@
+bin myrcgi =
+	myrcgi.myr
+	types.myr
+;;
