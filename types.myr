@@ -1,61 +1,18 @@
 use std
 
-pkg fastcgi =
-	const FCGI_LISTENSOCK_FILENO	= 0
+pkg fcgi =
+	type rtype	 = byte
 
-	const FCGI_HEADER_LEN		= 8
+	const HEADER_LEN 		: std.size = 8
+	const version 			: byte = 1
 
-	const FCGI_VERSION_1		= 1
-
-	const FCGI_BEGIN_REQUEST	= 1
-	const FCGI_ABORT_REQUEST	= 2
-	const FCGI_END_REQUEST		= 3
-	const FCGI_PARAMS		= 4
-	const FCGI_STDIN		= 5
-	const FCGI_STDOUT		= 6
-	const FCGI_STDERR		= 7
-	const FCGI_DATA			= 8
-	const FCGI_GET_VALUES		= 9
-	const FCGI_GET_VALUES_RESULT	= 10
-	const FCGI_UNKNOWN_TYPE		= 11
-	const FCGI_MAXTYPE		= FCGI_UNKNOWN_TYPE
-
-	const FCGI_NULL_REQUEST_ID	= 0 
-
-	const FCGI_KEEP_CONN		= 1
-
-	const FCGI_RESPONDER		= 1
-	const FCGI_AUTHORIZER		= 2
-	const FCGI_FILTER		= 3
-
-	const FCGI_REQUEST_COMPLETE	= 0
-	const FCGI_CANT_MPX_CONN	= 1
-	const FCGI_OVERLOADED		= 2
-	const FCGI_UNKNOWN_ROLE		= 3
-
-	type FCGI_HEADER = struct
-		version	: uint8
-		htype	: uint8
-		id	: uint16
-		conlen	: uint16
-		padlen	: uint8
-		reverve	: uint8
-	;;
-
-	type FCGI_BEGIN_REQUEST_BODY = struct
-		role	: uint16
-		flags	: uint8
-		reserve	: uint8[5]
-	;;
-
-	type FCGI_END_REQUEST_BODY = struct
-		appstatus	: uint32
-		protocolstatus	: uint8
-		reserve		: uint8[3]
-	;;
-
-	type FCGI_END_REQUEST_RECORD = struct
-		header	: FCGI_HEADER
-		body	: FCGI_END_REQUEST_BODY
-	;;
+	const BeginRequest		: rtype = 1
+	const EndRequest		: rtype = 3
+	const Params			: rtype = 4
+	const Stdin			: rtype = 5
+	const Stdout			: rtype = 6
+	const Data			: rtype = 8
+	const GetValues			: rtype = 9
+	const UnknownType		: rtype = 11
+	const MaxType			: rtype = UnknownType
 ;;

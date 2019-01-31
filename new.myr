@@ -1,0 +1,173 @@
+use std
+use sys
+
+use "types"
+
+impl disposable byte[:] =
+	__dispose__ = {b
+		std.slfree(b)
+	}
+;;
+
+const read_header = {fd
+	var buf : byte[fcgi.HEADER_LEN]
+	var content, what, version, id, conlen, padlen
+	var junk
+
+	match std.read(fd, buf[:])
+	| `std.Ok sz:
+		if sz < buf.len
+			goto err
+		;;
+
+		version 	= buf[0]
+
+		if version != fcgi.version
+			goto err
+		;;
+
+		what		= (buf[1] : fcgi.rtype)
+		id		= std.getbe16(buf[2:4])
+		conlen 		= std.getbe16(buf[4:6])
+		padlen		= std.getbe8(buf[6:])
+		/* buf[7] is reserved space */
+	| `std.Err e: goto err
+	;;
+
+	content = std.slalloc(conlen)
+
+	match std.read(fd, content)
+	| `std.Ok sz:
+		if sz < content.len
+			std.slfree(content)
+			goto err
+		;;
+	| `std.Err e: goto err
+	;;
+
+	if padlen > 0
+		junk = std.slalloc(padlen)
+		std.read(fd, junk)
+		std.slfree(junk)
+	;;
+
+	-> `std.Ok (what, content)
+
+:err
+	-> `std.Err 1
+}
+
+const prepare_header = {buf, what, id, conlen
+	buf[0] = fcgi.version
+	std.putbe8(buf[1:], what)
+	std.putbe16(buf[2:], id)
+	std.putbe16(buf[4:], conlen)
+	buf[6] = 0	/* padding length */
+	buf[7] = 0	/* reserved space */
+}
+
+const send_response = {fd, data
+	var buf : byte[:]
+
+	buf = std.slalloc(fcgi.HEADER_LEN)
+
+	prepare_header(buf, fcgi.Stdout, 1, data.len)
+
+	match std.write(fd, buf)
+	| `std.Ok sz:
+		if sz < buf.len
+			goto err
+		;;
+	| `std.Err e: goto err
+	;;
+
+	match std.write(fd, data)
+	| `std.Ok sz:
+		if sz < data.len
+			goto err
+		;;
+	| `std.Err e: goto err
+	;;
+
+	prepare_header(buf, fcgi.EndRequest, 1, fcgi.HEADER_LEN)
+
+	match std.write(fd, buf)
+	| `std.Ok sz:
+		if sz < buf.len
+			goto err
+		;;
+	| `std.Err e: goto err
+	;;
+
+	/* end request data */
+	std.putbe32(buf[:4], 0)
+	buf[4] = 0
+	buf[5] = 0
+	buf[6] = 0
+	buf[7] = 0
+
+	match std.write(fd, buf)
+	| `std.Ok sz:
+		if sz < buf.len
+			goto err
+		;;
+	| `std.Err e: goto err
+	;;
+
+	std.slfree(buf)
+	-> `std.Ok true
+
+:err
+	std.slfree(buf)
+	-> `std.Err 1
+}
+
+const main = {
+	var fd, sock
+
+	var i = 0
+
+	sock = std.try(std.announce("unix!/var/www/run/test.sock"))
+	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
+
+	while true
+		var res = "Content-Type: text/html\r\n\r\nhello"
+
+		match std.accept(sock)
+		| `std.Ok r: fd = r
+		| `std.Err e: std.fatal("{}\n", e)
+		;;
+
+		while true
+			var what, content
+
+			match read_header(fd)
+			| `std.Ok (w, c):
+				what = w
+				content = auto c
+			| `std.Err e: std.fatal("{}\n", e)
+			;;
+
+			match what
+			| fcgi.BeginRequest:
+			| fcgi.Params:
+			| fcgi.Stdin:
+				break
+			| _: std.fatal("{}\n", what)
+			;;
+		;;
+
+		match send_response(fd, res)
+		| `std.Ok e:
+		| `std.Err e: std.fatal("{}\n", "send failed")
+		;;
+
+		std.close(fd)
+
+		i++
+
+		if i % 1000 == 0
+			std.put("{}\n", i)
+		;;
+	;;
+}

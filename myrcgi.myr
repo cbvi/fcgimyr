@@ -34,7 +34,7 @@ const parse_beginrequest = {buf
 }
 
 const parse_params = {buf
-	std.put("{}\n", buf)
+	//std.put("{}\n", buf)
 }
 
 const parse_stdin = {buf
@@ -47,6 +47,8 @@ const read_header = {sock
 	var content, padding
 	var rtype
 
+	std.put("about to read\n")
+
 	match std.read(sock, buf[:])
 	| `std.Ok s:
 		version = buf[0]
@@ -58,6 +60,8 @@ const read_header = {sock
 	| `std.Err n: std.fatal("{}\n", n)
 	;;
 
+	std.put("{}\n", "read header")
+
 	match typ
 	| 1: rtype = `Begin
 	| 4: rtype = `Params
@@ -65,7 +69,7 @@ const read_header = {sock
 	| _: std.fatal("unknown type {}\n", typ)
 	;;
 
-	std.put("{}\n", rtype)
+	std.put("v={} t={} i={} l={} p={} r={}\n", version, typ, id, len, pad, res)
 
 	content = std.slalloc(len)
 
@@ -89,11 +93,19 @@ const main = {
 	var fd
 	var ret
 
+	var errfd = bio.mkfile(2, bio.Wr)
+
+	var cntr = 0
+
 	path = "/var/www/run/test.sock"
 
 	sock = std.try(std.announce("unix!/var/www/run/test.sock"))
 
 	sys.chown(sys.cstring(path), 67, 67)
+
+	while true
+
+	std.put("{}\n", "at the start")
 
 	match std.accept(sock)
 	| `std.Ok r: fd = r
@@ -104,6 +116,7 @@ const main = {
 		var rtype, content
 
 		(rtype, content) = read_header(fd)
+		std.put("{}\n", "did header")
 
 		match rtype
 		| `Begin: std.put("{}\n", parse_beginrequest(content))
@@ -168,4 +181,14 @@ const main = {
 	std.put("{}\n", "finished request")
 
 	std.put("{}\n", "the end")
+
+	std.close(fd)
+
+	cntr++
+
+	if cntr % 1000 == 0
+		bio.put(errfd, "{}\n", cntr)
+		bio.flush(errfd)
+	;;
+	;;
 }

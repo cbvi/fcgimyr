@@ -1,4 +1,4 @@
 bin myrcgi =
-	myrcgi.myr
+	new.myr
 	types.myr
 ;;
