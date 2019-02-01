@@ -3,7 +3,7 @@ use std
 use "types"
 
 pkg fcgi =
-	const read_header	: (fd : std.fd -> std.result((fcgi.rtype, byte[:]), error))
+	const read_header	: (fd : std.fd -> std.result((rtype, byte[:]), error))
 	const send_response	: (fd : std.fd, res : byte[:] -> std.result(bool, error))
 ;;
 
@@ -24,7 +24,7 @@ const read_header = {fd
 			goto version
 		;;
 
-		what		= (buf[1] : fcgi.rtype)
+		what		= (buf[1] : rtype)
 		id		= std.getbe16(buf[2:4])
 		conlen 		= std.getbe16(buf[4:6])
 		padlen		= std.getbe8(buf[6:])
