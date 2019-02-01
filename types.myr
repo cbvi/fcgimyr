@@ -15,4 +15,9 @@ pkg fcgi =
 	const GetValues			: rtype = 9
 	const UnknownType		: rtype = 11
 	const MaxType			: rtype = UnknownType
+
+	type error = union
+		`Eversion	byte
+		`Eshort
+	;;
 ;;

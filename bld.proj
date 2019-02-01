@@ -1,4 +1,9 @@
-bin myrcgi =
+lib fcgi =
 	new.myr
 	types.myr
+;;
+
+bin myrcgi =
+	lib fcgi
+	main.myr
 ;;

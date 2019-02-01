@@ -1,5 +1,4 @@
 use std
-use sys
 
 use "types"
 
@@ -7,6 +6,11 @@ impl disposable byte[:] =
 	__dispose__ = {b
 		std.slfree(b)
 	}
+;;
+
+pkg fcgi =
+	const read_header	: (fd : std.fd -> std.result((fcgi.rtype, byte[:]), error))
+	const send_response	: (fd : std.fd, res : byte[:] -> std.result(bool, error))
 ;;
 
 const read_header = {fd
@@ -17,13 +21,13 @@ const read_header = {fd
 	match std.read(fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
-			goto err
+			goto short
 		;;
 
 		version 	= buf[0]
 
 		if version != fcgi.version
-			goto err
+			goto version
 		;;
 
 		what		= (buf[1] : fcgi.rtype)
@@ -31,7 +35,7 @@ const read_header = {fd
 		conlen 		= std.getbe16(buf[4:6])
 		padlen		= std.getbe8(buf[6:])
 		/* buf[7] is reserved space */
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	content = std.slalloc(conlen)
@@ -40,9 +44,9 @@ const read_header = {fd
 	| `std.Ok sz:
 		if sz < content.len
 			std.slfree(content)
-			goto err
+			goto short
 		;;
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	if padlen > 0
@@ -53,8 +57,11 @@ const read_header = {fd
 
 	-> `std.Ok (what, content)
 
-:err
-	-> `std.Err 1
+:version
+	-> `std.Err `Eversion version
+
+:short
+	-> `std.Err `Eshort
 }
 
 const prepare_header = {buf, what, id, conlen
@@ -76,17 +83,17 @@ const send_response = {fd, data
 	match std.write(fd, buf)
 	| `std.Ok sz:
 		if sz < buf.len
-			goto err
+			goto short
 		;;
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	match std.write(fd, data)
 	| `std.Ok sz:
 		if sz < data.len
-			goto err
+			goto short
 		;;
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	prepare_header(buf, fcgi.EndRequest, 1, fcgi.HEADER_LEN)
@@ -94,9 +101,9 @@ const send_response = {fd, data
 	match std.write(fd, buf)
 	| `std.Ok sz:
 		if sz < buf.len
-			goto err
+			goto short
 		;;
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	/* end request data */
@@ -109,65 +116,15 @@ const send_response = {fd, data
 	match std.write(fd, buf)
 	| `std.Ok sz:
 		if sz < buf.len
-			goto err
+			goto short
 		;;
-	| `std.Err e: goto err
+	| `std.Err e: goto short
 	;;
 
 	std.slfree(buf)
 	-> `std.Ok true
 
-:err
+:short
 	std.slfree(buf)
-	-> `std.Err 1
-}
-
-const main = {
-	var fd, sock
-
-	var i = 0
-
-	sock = std.try(std.announce("unix!/var/www/run/test.sock"))
-	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
-
-	while true
-		var res = "Content-Type: text/html\r\n\r\nhello"
-
-		match std.accept(sock)
-		| `std.Ok r: fd = r
-		| `std.Err e: std.fatal("{}\n", e)
-		;;
-
-		while true
-			var what, content
-
-			match read_header(fd)
-			| `std.Ok (w, c):
-				what = w
-				content = auto c
-			| `std.Err e: std.fatal("{}\n", e)
-			;;
-
-			match what
-			| fcgi.BeginRequest:
-			| fcgi.Params:
-			| fcgi.Stdin:
-				break
-			| _: std.fatal("{}\n", what)
-			;;
-		;;
-
-		match send_response(fd, res)
-		| `std.Ok e:
-		| `std.Err e: std.fatal("{}\n", "send failed")
-		;;
-
-		std.close(fd)
-
-		i++
-
-		if i % 1000 == 0
-			std.put("{}\n", i)
-		;;
-	;;
+	-> `std.Err `Eshort
 }
