@@ -2,12 +2,6 @@ use std
 
 use "types"
 
-impl disposable byte[:] =
-	__dispose__ = {b
-		std.slfree(b)
-	}
-;;
-
 pkg fcgi =
 	const read_header	: (fd : std.fd -> std.result((fcgi.rtype, byte[:]), error))
 	const send_response	: (fd : std.fd, res : byte[:] -> std.result(bool, error))
