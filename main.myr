@@ -2,15 +2,50 @@ use std
 use sys
 use fcgi
 
+use thread
+
 impl disposable byte[:] =
 	__dispose__ = {b
 		std.slfree(b)
 	}
 ;;
 
+const read_loop = {fd
+	const res = "Content-Type: text/html\r\n\r\nhello"
+
+	while true
+		var what, content
+
+		match fcgi.read_header(fd)
+		| `std.Ok (w, c):
+			what = w
+			content = auto c
+		| `std.Err e:
+			goto err
+		;;
+
+		match what
+		| fcgi.BeginRequest:
+		| fcgi.Params:
+		| fcgi.Stdin:
+			break
+		| _:
+			goto err
+		;;
+	;;
+
+	match fcgi.send_response(fd, res)
+	| `std.Ok e:
+	| `std.Err e:
+		goto err
+	;;
+
+:err
+	std.close(fd)
+}
+
 const main = {
-	var sock
-	var fd = -1
+	var sock, fd
 
 	sock = std.try(std.announce("unix!/var/www/run/test.sock"))
 	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
@@ -21,37 +56,11 @@ const main = {
 		match std.accept(sock)
 		| `std.Ok r: fd = r
 		| `std.Err e:
-			goto err
+			continue
 		;;
 
-		while true
-			var what, content
-
-			match fcgi.read_header(fd)
-			| `std.Ok (w, c):
-				what = w
-				content = auto c
-			| `std.Err e:
-				goto err
-			;;
-
-			match what
-			| fcgi.BeginRequest:
-			| fcgi.Params:
-			| fcgi.Stdin:
-				break
-			| _:
-				goto err
-			;;
-		;;
-
-		match fcgi.send_response(fd, res)
-		| `std.Ok e:
-		| `std.Err e:
-			goto err
-		;;
-
-:err
-		std.close(fd)
+		thread.spawn({
+			read_loop(fd)
+		})
 	;;
 }
