@@ -2,8 +2,6 @@ use std
 use sys
 use fcgi
 
-use thread
-
 impl disposable byte[:] =
 	__dispose__ = {b
 		std.slfree(b)
@@ -12,6 +10,7 @@ impl disposable byte[:] =
 
 const read_loop = {fd
 	const res = "Content-Type: text/html\r\n\r\nhello"
+	var err
 
 	while true
 		var what, content
@@ -21,6 +20,7 @@ const read_loop = {fd
 			what = w
 			content = auto c
 		| `std.Err e:
+			err = e
 			goto err
 		;;
 
@@ -30,6 +30,7 @@ const read_loop = {fd
 		| fcgi.Stdin:
 			break
 		| _:
+			err = `fcgi.Etype what
 			goto err
 		;;
 	;;
@@ -37,11 +38,16 @@ const read_loop = {fd
 	match fcgi.send_response(fd, res)
 	| `std.Ok e:
 	| `std.Err e:
+		err = e
 		goto err
 	;;
 
+	std.close(fd)
+	-> `std.Ok void
+
 :err
 	std.close(fd)
+	-> `std.Err err
 }
 
 const main = {
@@ -51,16 +57,23 @@ const main = {
 	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
 
 	while true
-		var res = "Content-Type: text/html\r\n\r\nhello"
-
 		match std.accept(sock)
 		| `std.Ok r: fd = r
 		| `std.Err e:
 			continue
 		;;
 
-		thread.spawn({
-			read_loop(fd)
-		})
+		match read_loop(fd)
+		| `std.Ok _:
+		| `std.Err e:
+			match e
+			| `fcgi.Eversion v:
+				std.put("invalid version: {}\n", v)
+			| `fcgi.Eshort:
+				std.put("connection interupted\n")
+			| `fcgi.Etype t:
+				std.put("unknown type: {}\n", t)
+			;;
+		;;
 	;;
 }

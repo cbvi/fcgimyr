@@ -17,7 +17,8 @@ pkg fcgi =
 	const MaxType			: rtype = UnknownType
 
 	type error = union
-		`Eversion	byte
+		`Eversion byte
 		`Eshort
+		`Etype rtype
 	;;
 ;;
