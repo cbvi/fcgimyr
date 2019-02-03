@@ -26,7 +26,7 @@ const read_header = {fd
 
 		what		= (buf[1] : rtype)
 		id		= std.getbe16(buf[2:4])
-		conlen 		= std.getbe16(buf[4:6])
+		conlen		= std.getbe16(buf[4:6])
 		padlen		= std.getbe8(buf[6:])
 		/* buf[7] is reserved space */
 	| `std.Err e: goto short
@@ -68,13 +68,11 @@ const prepare_header = {buf, what, id, conlen
 }
 
 const send_response = {fd, data
-	var buf : byte[:]
+	var buf : byte[fcgi.HEADER_LEN]
 
-	buf = std.slalloc(fcgi.HEADER_LEN)
+	prepare_header(buf[:], fcgi.Stdout, 1, data.len)
 
-	prepare_header(buf, fcgi.Stdout, 1, data.len)
-
-	match std.write(fd, buf)
+	match std.write(fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -90,9 +88,9 @@ const send_response = {fd, data
 	| `std.Err e: goto short
 	;;
 
-	prepare_header(buf, fcgi.EndRequest, 1, fcgi.HEADER_LEN)
+	prepare_header(buf[:], fcgi.EndRequest, 1, fcgi.HEADER_LEN)
 
-	match std.write(fd, buf)
+	match std.write(fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -107,7 +105,7 @@ const send_response = {fd, data
 	buf[6] = 0
 	buf[7] = 0
 
-	match std.write(fd, buf)
+	match std.write(fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -115,10 +113,8 @@ const send_response = {fd, data
 	| `std.Err e: goto short
 	;;
 
-	std.slfree(buf)
 	-> `std.Ok true
 
 :short
-	std.slfree(buf)
 	-> `std.Err `Eshort
 }
