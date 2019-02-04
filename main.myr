@@ -18,11 +18,13 @@ const read_loop = {fd
 		match fcgi.read_header(fd)
 		| `std.Ok (w, c):
 			what = w
-			content = auto c
+			content = c
 		| `std.Err e:
 			err = e
 			goto err
 		;;
+
+		auto content
 
 		match what
 		| fcgi.BeginRequest:
