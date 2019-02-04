@@ -1,0 +1,52 @@
+use std
+
+const getval = {buf, len
+	-> (buf[:len], buf[len:])
+}
+
+const getlen = {buf
+	if buf[0] >> 7 == 0
+		-> ((buf[0] : uint32), buf[1:])
+	else
+		var x = ((((buf[0] : uint32) & 0x7f) << 24) + \
+			((buf[1] : uint32) << 16) + \
+			((buf[2] : uint32) << 8) + \
+			((buf[3] : uint32)))
+		-> (x, buf[4:]) 
+	;;
+}
+
+const parse_params = {txt
+	var keylen, vallen, buf
+	var key, val
+
+	buf = txt
+
+	for b : txt
+		std.put("{} {}\n", (b : byte), (b : char))
+	;;
+	
+	while buf.len > 0
+		(keylen, buf) = getlen(buf)
+		(vallen, buf) = getlen(buf)
+
+		(key, buf) = getval(buf, keylen)
+		(val, buf) = getval(buf, vallen)
+
+		std.put("===> {} {}\n", keylen, vallen)
+
+		std.put("{} {}\n", key, val)
+
+		std.put("{}\n", buf.len)
+	;;
+}
+
+const main = {
+	var txt
+
+	txt = std.try(std.slurp("params.txt"))
+
+	parse_params(txt)
+
+	std.put("{}\n", txt.len)
+}
