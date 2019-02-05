@@ -19,26 +19,25 @@ const getlen = {buf
 const parse_params = {txt
 	var keylen, vallen, buf
 	var key, val
+	var ht
+
+	ht = std.mkht()
 
 	buf = txt
 
-	for b : txt
-		std.put("{} {}\n", (b : byte), (b : char))
-	;;
-	
-	while buf.len > 0
+	while buf.len > 4
 		(keylen, buf) = getlen(buf)
 		(vallen, buf) = getlen(buf)
 
 		(key, buf) = getval(buf, keylen)
 		(val, buf) = getval(buf, vallen)
 
-		std.put("===> {} {}\n", keylen, vallen)
-
-		std.put("{} {}\n", key, val)
-
-		std.put("{}\n", buf.len)
+		std.htput(ht, key, val)
 	;;
+
+	std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))
+
+	std.htfree(ht)
 }
 
 const main = {
@@ -47,6 +46,4 @@ const main = {
 	txt = std.try(std.slurp("params.txt"))
 
 	parse_params(txt)
-
-	std.put("{}\n", txt.len)
 }
