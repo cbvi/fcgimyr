@@ -1,5 +1,9 @@
 use std
 
+pkg fcgi =
+	const parse_params	: (buf : byte[:] -> std.htab(byte[:], byte[:])#)
+;;
+
 const getval = {buf, keylen, vallen
 	var key, val
 
@@ -51,14 +55,14 @@ const getlen = {buf
 	-> `std.None
 }
 
-const parse_params = {buf
+const parse_params = {buf : byte[:]
 	var keylen, vallen
 	var key, val
 	var ht
 
 	ht = std.mkht()
 
-	while true
+	while buf.len > 0
 		match getlen(buf)
 		| `std.Some (lens, b):
 			(keylen, vallen) = lens
@@ -78,11 +82,14 @@ const parse_params = {buf
 		std.htput(ht, key, val)
 	;;
 
-	std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))
+	//std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))
 
-	std.htfree(ht)
+	//std.htfree(ht)
+
+	-> ht
 }
 
+/*
 const main = {
 	var txt
 
@@ -90,3 +97,4 @@ const main = {
 
 	parse_params(txt)
 }
+*/
