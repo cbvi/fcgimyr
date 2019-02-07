@@ -51,14 +51,12 @@ const getlen = {buf
 	-> `std.None
 }
 
-const parse_params = {txt
-	var keylen, vallen, buf
+const parse_params = {buf
+	var keylen, vallen
 	var key, val
 	var ht
 
 	ht = std.mkht()
-
-	buf = txt
 
 	while true
 		match getlen(buf)
