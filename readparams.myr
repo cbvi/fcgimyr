@@ -24,10 +24,9 @@ const getval = {buf, keylen, vallen
 }
 
 const getlen = {buf
-	var i
 	var lens : uint32[2]
 
-	for i = 0; i < 2; i++
+	for var i = 0; i < 2; i++
 		if buf[0] >> 7 == 0
 			if buf.len <= 1
 				goto err
