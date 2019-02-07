@@ -37,10 +37,10 @@ const getlen = {buf
 			if buf.len <= 4
 				goto err
 			;;
-			lens[i] = ((((buf[0] : uint32) & 0x7f) << 24) + \
+			lens[i] = (((buf[0] : uint32) & 0x7f) << 24) + \
 				((buf[1] : uint32) << 16) + \
 				((buf[2] : uint32) << 8) + \
-				((buf[3] : uint32)))
+				((buf[3] : uint32))
 			buf = buf[4:]
 		;;
 	;;
