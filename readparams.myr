@@ -1,11 +1,26 @@
 use std
 
-const getval = {buf, len
-	if buf.len >= len
-		-> `std.Some (buf[:len], buf[len:])
+const getval = {buf, keylen, vallen
+	var key, val
+
+	if buf.len >= keylen
+		key = buf[:keylen]
+		buf = buf[keylen:]
 	else
-		-> `std.None
+		goto err
 	;;
+
+	if buf.len >= vallen
+		val = buf[:vallen]
+		buf = buf[vallen:]
+	else
+		goto err
+	;;
+
+	-> `std.Some ((key, val), buf)
+
+:err
+	-> `std.None
 }
 
 const getlen = {buf
@@ -54,16 +69,9 @@ const parse_params = {txt
 		| `std.None: break
 		;;
 
-		match getval(buf, keylen)
-		| `std.Some (k, b):
-			key = k
-			buf = b
-		| `std.None: break
-		;;
-
-		match getval(buf, vallen)
-		| `std.Some (v, b):
-			val = v
+		match getval(buf, keylen, vallen)
+		| `std.Some (kv, b):
+			(key, val) = kv
 			buf = b
 		| `std.None: break
 		;;
