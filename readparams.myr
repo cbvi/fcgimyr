@@ -31,10 +31,9 @@ const getlen = {buf
 	var lens : uint32[2]
 
 	for var i = 0; i < 2; i++
-		if buf[0] >> 7 == 0
-			if buf.len <= 1
-				goto err
-			;;
+		if buf.len <= 1
+			goto err
+		elif buf[0] >> 7 == 0
 			lens[i] = (buf[0] : uint32)
 			buf = buf[1:]
 		else
@@ -62,7 +61,7 @@ const parse_params = {buf : byte[:]
 
 	ht = std.mkht()
 
-	while buf.len > 0
+	while true
 		match getlen(buf)
 		| `std.Some (lens, b):
 			(keylen, vallen) = lens
