@@ -2,86 +2,31 @@ use std
 use sys
 use fcgi
 
-impl disposable byte[:] =
-	__dispose__ = {b
-		std.slfree(b)
-	}
-;;
-
-const read_loop = {fd
-	const res = "Content-Type: text/html\r\nSet-Cookie: mtest=1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128; Max-Age=999\r\nX-OHNO: \r\n\r\ntesting"
-	var err
-	var ht
-
-	while true
-		var what, content
-
-		match fcgi.read_header(fd)
-		| `std.Ok (w, c):
-			what = w
-			content = c
-		| `std.Err e:
-			err = e
-			goto err
-		;;
-
-		auto content
-
-		match what
-		| fcgi.BeginRequest:
-		| fcgi.Params:
-			ht = fcgi.parse_params(content)
-			for k : std.htkeys(ht)
-				std.put("{}\n", k)
-			;;
-			std.htfree(ht)
-		| fcgi.Stdin:
-			break
-		| _:
-			err = `fcgi.Etype what
-			goto err
-		;;
-	;;
-
-	match fcgi.send_response(fd, res)
-	| `std.Ok e:
-	| `std.Err e:
-		err = e
-		goto err
-	;;
-
-	std.close(fd)
-	-> `std.Ok void
-
-:err
-	std.close(fd)
-	-> `std.Err err
-}
-
 const main = {
-	var sock, fd
+	var srv, req
 
-	sock = std.try(std.announce("unix!/var/www/run/test.sock"))
+	const res = "Content-Type: text/html\r\nSet-Cookie: mtest=1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128; Max-Age=999\r\nX-OHNO: \r\n\r\ntesting"
+
+	srv = std.try(fcgi.announce("unix!/var/www/run/test.sock"))
 	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
 
 	while true
-		match std.accept(sock)
-		| `std.Ok r: fd = r
+		match fcgi.get_request(srv)
+		| `std.Ok r: req = r
 		| `std.Err e:
+			std.put("{}\n", e)
 			continue
 		;;
 
-		match read_loop(fd)
-		| `std.Ok _:
-		| `std.Err e:
-			match e
-			| `fcgi.Eversion v:
-				std.put("invalid version: {}\n", v)
-			| `fcgi.Eshort:
-				std.put("connection interupted\n")
-			| `fcgi.Etype t:
-				std.put("unknown type: {}\n", t)
-			;;
+		var keys = std.htkeys(req.params)
+		for k : keys
+			std.put("{}\n", k)
 		;;
+
+		std.slfree(keys)
+
+		std.try(fcgi.send_response(req, res))
+
+		fcgi.req_free(req)
 	;;
 }

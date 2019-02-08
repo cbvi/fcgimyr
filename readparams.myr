@@ -1,7 +1,9 @@
 use std
 
+use "types"
+
 pkg fcgi =
-	const parse_params	: (buf : byte[:] -> std.htab(byte[:], byte[:])#)
+	const parse_params	: (req : request#, buf : byte[:] -> void)
 ;;
 
 const getval = {buf, keylen, vallen
@@ -54,12 +56,9 @@ const getlen = {buf
 	-> `std.None
 }
 
-const parse_params = {buf : byte[:]
+const parse_params = {req, buf
 	var keylen, vallen
 	var key, val
-	var ht
-
-	ht = std.mkht()
 
 	while true
 		match getlen(buf)
@@ -76,16 +75,14 @@ const parse_params = {buf : byte[:]
 		| `std.None: break
 		;;
 
-		std.put("{} {}\n", key, val)
+		//std.put("{} {}\n", key, val)
 
-		std.htput(ht, key, val)
+		std.htput(req.params, std.sldup(key), std.sldup(val))
 	;;
 
 	//std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))
 
 	//std.htfree(ht)
-
-	-> ht
 }
 
 /*

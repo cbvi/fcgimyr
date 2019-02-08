@@ -20,5 +20,17 @@ pkg fcgi =
 		`Eversion byte
 		`Eshort
 		`Etype rtype
+		`Econn
+	;;
+
+	type server = struct
+		ann		: std.announce#
+	;;
+
+	type request = struct
+		fd	: std.fd
+		params	: std.htab(byte[:], byte[:])#
+		_params	: byte[:]
+		what	: rtype
 	;;
 ;;

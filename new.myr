@@ -1,10 +1,20 @@
 use std
 
+use "readparams"
 use "types"
+
+impl disposable byte[:] =
+	__dispose__ = {b
+		std.slfree(b)
+	}
+;;
 
 pkg fcgi =
 	const read_header	: (fd : std.fd -> std.result((rtype, byte[:]), error))
-	const send_response	: (fd : std.fd, res : byte[:] -> std.result(bool, error))
+	const send_response	: (req : request#, data : byte[:] -> std.result(bool, error))
+	const announce		: (ds : byte[:] -> std.result(server#, error))
+	const get_request	: (srv : server# -> std.result(request#, error))
+	const req_free		: (req : request# -> void)
 ;;
 
 const read_header = {fd
@@ -40,7 +50,9 @@ const read_header = {fd
 			std.slfree(content)
 			goto short
 		;;
-	| `std.Err e: goto short
+	| `std.Err e:
+		std.slfree(content)
+		goto short
 	;;
 
 	if padlen > 0
@@ -67,12 +79,12 @@ const prepare_header = {buf, what, id, conlen
 	buf[7] = 0	/* reserved space */
 }
 
-const send_response = {fd, data
+const send_response = {req, data
 	var buf : byte[fcgi.HEADER_LEN]
 
 	prepare_header(buf[:], fcgi.Stdout, 1, data.len)
 
-	match std.write(fd, buf[:])
+	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -80,7 +92,7 @@ const send_response = {fd, data
 	| `std.Err e: goto short
 	;;
 
-	match std.write(fd, data)
+	match std.write(req.fd, data)
 	| `std.Ok sz:
 		if sz < data.len
 			goto short
@@ -90,7 +102,7 @@ const send_response = {fd, data
 
 	prepare_header(buf[:], fcgi.EndRequest, 1, fcgi.HEADER_LEN)
 
-	match std.write(fd, buf[:])
+	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -105,7 +117,7 @@ const send_response = {fd, data
 	buf[6] = 0
 	buf[7] = 0
 
-	match std.write(fd, buf[:])
+	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -117,4 +129,99 @@ const send_response = {fd, data
 
 :short
 	-> `std.Err `Eshort
+}
+
+const read_request = {req
+	var err
+
+	while true
+		var what, content
+
+		match read_header(req.fd)
+		| `std.Ok (w, c):
+			what = w
+			content = c
+		| `std.Err e:
+			err = e
+			goto err
+		;;
+
+		auto content
+
+		match what
+		| BeginRequest:
+		| Params:
+			parse_params(req, content)
+		| Stdin:
+			break
+		| _:
+			err = `Etype what
+			goto err
+		;;
+	;;
+
+	-> `std.Ok req
+
+:err
+	-> `std.Err err
+}
+
+const req_free = {req
+	std.close(req.fd)
+
+	var keys = std.htkeys(req.params)
+	for k : keys
+		match std.htget(req.params, k)
+		| `std.Some v:
+			std.slfree(v)
+			std.slfree(k)
+		| `std.None:
+		;;
+	;;
+
+	std.slfree(keys)
+
+	std.htfree(req.params)
+	std.free(req)
+}
+
+const get_request = {srv
+	var req
+	var err
+
+	req = std.alloc()
+	req.params = std.mkht()
+
+	match std.accept(srv.ann)
+	| `std.Ok a: req.fd = a
+	| `std.Err e:
+		err = `Econn
+		goto err
+	;;
+
+	match read_request(req)
+	| `std.Ok r: req = r
+	| `std.Err e:
+		err = e
+		goto err
+	;;
+
+	-> `std.Ok req
+
+:err
+	std.htfree(req.params)
+	std.free(req)
+
+	-> `std.Err err
+}
+
+const announce = {ds
+	match std.announce(ds)
+	| `std.Ok a:
+		-> `std.Ok std.mk([
+			.ann=a
+		])
+	| `std.Err e:
+		-> `std.Err `Econn
+	;;
 }
