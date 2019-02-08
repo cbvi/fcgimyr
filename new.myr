@@ -18,7 +18,7 @@ const read_header = {fd
 			goto short
 		;;
 
-		version 	= buf[0]
+		version		= buf[0]
 
 		if version != fcgi.version
 			goto version
