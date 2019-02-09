@@ -151,13 +151,18 @@ const read_request = {req
 		match what
 		| BeginRequest:
 		| Params:
-			parse_params(req, content)
+			//parse_params(req, content)
+			std.sljoin(&req.paramb, content)
 		| Stdin:
 			break
 		| _:
 			err = `Etype what
 			goto err
 		;;
+	;;
+
+	if req.paramb.len > 0
+		parse_params(req, req.paramb)
 	;;
 
 	-> `std.Ok req
@@ -182,6 +187,7 @@ const req_free = {req
 	std.slfree(keys)
 
 	std.htfree(req.params)
+	std.slfree(req.paramb)
 	std.free(req)
 }
 
@@ -191,6 +197,7 @@ const get_request = {srv
 
 	req = std.alloc()
 	req.params = std.mkht()
+	req.paramb = ""
 
 	match std.accept(srv.ann)
 	| `std.Ok a: req.fd = a

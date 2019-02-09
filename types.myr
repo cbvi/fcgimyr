@@ -30,7 +30,7 @@ pkg fcgi =
 	type request = struct
 		fd	: std.fd
 		params	: std.htab(byte[:], byte[:])#
-		_params	: byte[:]
+		paramb	: byte[:]
 		what	: rtype
 	;;
 ;;
