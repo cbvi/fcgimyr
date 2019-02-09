@@ -201,9 +201,7 @@ const get_request = {srv
 	-> `std.Ok req
 
 :err
-	std.slfree(req.params)
-	std.slfree(req.paramb)
-	std.free(req)
+	req_free(req)
 
 	-> `std.Err err
 }
