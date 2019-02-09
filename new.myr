@@ -187,7 +187,9 @@ const req_free = {req
 	std.slfree(keys)
 
 	std.htfree(req.params)
-	std.slfree(req.paramb)
+	if req.paramb.len > 0
+		std.slfree(req.paramb)
+	;;
 	std.free(req)
 }
 
