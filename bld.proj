@@ -1,7 +1,7 @@
 lib fcgi =
 	new.myr
+	params.myr
 	types.myr
-	readparams.myr
 ;;
 
 bin myrcgi =

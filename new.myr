@@ -1,6 +1,6 @@
 use std
 
-use "readparams"
+use "params"
 use "types"
 
 impl disposable byte[:] =
