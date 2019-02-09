@@ -18,8 +18,15 @@ const main = {
 			continue
 		;;
 
-		for (k, v) : req.params
-			std.put("{}={}\n", k, v)
+		for kv : req.params
+			//std.put("{}={}\n", k, v)
+			match kv
+			| ("HTTP_COOKIE", v):
+				std.put("{}\n", v)
+			| ("SERVER_SOFTWARE", v):
+				std.put("{}\n", v)
+			| _:
+			;;
 		;;
 
 		std.try(fcgi.send_response(req, res))
