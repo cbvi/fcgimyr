@@ -179,10 +179,11 @@ const get_request = {srv
 	var req
 	var err
 
-	req = std.alloc()
-	req.params = [][:]
-	req.paramb = [][:]
-	req.fd = -1
+	req = std.mk([
+		.params = [][:],
+		.paramb = [][:],
+		.fd = -1
+	])
 
 	match std.accept(srv.ann)
 	| `std.Ok a: req.fd = a
