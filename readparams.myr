@@ -58,7 +58,6 @@ const getlen = {buf
 
 const parse_params = {req, buf
 	var keylen, vallen
-	var key, val
 
 	while true
 		match getlen(buf)
@@ -70,14 +69,13 @@ const parse_params = {req, buf
 
 		match getval(buf, keylen, vallen)
 		| `std.Some (kv, b):
-			(key, val) = kv
+			std.slpush(&req.params, kv)
 			buf = b
 		| `std.None: break
 		;;
 
 		//std.put("{} {}\n", key, val)
 
-		std.htput(req.params, std.sldup(key), std.sldup(val))
 	;;
 
 	//std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))

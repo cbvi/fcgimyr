@@ -18,12 +18,9 @@ const main = {
 			continue
 		;;
 
-		var keys = std.htkeys(req.params)
-		for k : keys
-			std.put("{}\n", k)
+		for (k, v) : req.params
+			std.put("{}={}\n", k, v)
 		;;
-
-		std.slfree(keys)
 
 		std.try(fcgi.send_response(req, res))
 
