@@ -73,22 +73,6 @@ const parse_params = {req, buf
 			buf = b
 		| `std.None: break
 		;;
-
-		//std.put("{} {}\n", key, val)
-
 	;;
 
-	//std.put("{}\n", std.get(std.htget(ht, "HTTP_COOKIE")))
-
-	//std.htfree(ht)
 }
-
-/*
-const main = {
-	var txt
-
-	txt = std.try(std.slurp("params.txt"))
-
-	parse_params(txt)
-}
-*/
