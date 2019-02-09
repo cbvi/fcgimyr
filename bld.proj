@@ -1,5 +1,5 @@
 lib fcgi =
-	new.myr
+	fcgi.myr
 	params.myr
 	types.myr
 ;;
