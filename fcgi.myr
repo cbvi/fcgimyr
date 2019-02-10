@@ -15,7 +15,7 @@ pkg fcgi =
 	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
 ;;
 
-const read_header = {fd
+const readheader = {fd
 	var buf : byte[fcgi.HEADER_LEN]
 	var content, what, version, id, conlen, padlen
 	var junk
@@ -68,7 +68,7 @@ const read_header = {fd
 	-> `std.Err `Eshort
 }
 
-const prepare_header = {buf, what, id, conlen
+const prepareheader = {buf, what, id, conlen
 	buf[0] = fcgi.version
 	std.putbe8(buf[1:], what)
 	std.putbe16(buf[2:], id)
@@ -80,7 +80,7 @@ const prepare_header = {buf, what, id, conlen
 const respond = {req, data
 	var buf : byte[fcgi.HEADER_LEN]
 
-	prepare_header(buf[:], fcgi.Stdout, req.id, data.len)
+	prepareheader(buf[:], fcgi.Stdout, req.id, data.len)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
@@ -98,7 +98,7 @@ const respond = {req, data
 	| `std.Err e: goto short
 	;;
 
-	prepare_header(buf[:], fcgi.EndRequest, req.id, fcgi.HEADER_LEN)
+	prepareheader(buf[:], fcgi.EndRequest, req.id, fcgi.HEADER_LEN)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
@@ -129,13 +129,13 @@ const respond = {req, data
 	-> `std.Err `Eshort
 }
 
-const read_request = {req
+const readrequest = {req
 	var err
 
 	while true
 		var id, what, content
 
-		match read_header(req.fd)
+		match readheader(req.fd)
 		| `std.Ok res:
 			(id, what, content) = res
 		| `std.Err e:
@@ -166,7 +166,7 @@ const read_request = {req
 		;;
 	;;
 
-	parse_params(req, req.paramb)
+	parseparams(req, req.paramb)
 
 	-> `std.Ok req
 
@@ -201,7 +201,7 @@ const serve = {srv, fn
 			continue
 		;;
 
-		match read_request(req)
+		match readrequest(req)
 		| `std.Ok r: req = r
 		| `std.Err e:
 			reqfree(req)
