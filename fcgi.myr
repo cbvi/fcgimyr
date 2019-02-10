@@ -10,8 +10,8 @@ impl disposable byte[:] =
 ;;
 
 pkg fcgi =
-	const respond		: (req : request#, data : byte[:] -> std.result(bool, error))
 	const announce		: (ds : byte[:] -> std.result(server#, error))
+	const respond		: (req : request#, data : byte[:] -> std.result(bool, error))
 	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
 ;;
 
