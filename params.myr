@@ -3,7 +3,7 @@ use std
 use "types"
 
 pkg fcgi =
-	const parse_params	: (req : request#, buf : byte[:] -> void)
+	pkglocal const parse_params	: (req : request#, buf : byte[:] -> void)
 ;;
 
 const getval = {buf, keylen, vallen
