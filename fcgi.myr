@@ -188,35 +188,36 @@ const shutdown = {srv
 	std.aclose(srv.ann)
 }
 
-const serve = {srv, fn
+const serve_cb = {srv, fn
 	var req
 
+	req = std.mk([
+		.id = 0,
+		.params = [][:],
+		.paramb = [][:],
+		.fd = -1,
+		.stdin = [][:]
+	])
+
+	match std.accept(srv.ann)
+	| `std.Ok a: req.fd = a
+	| `std.Err e: goto end
+	;;
+
+	match readrequest(req)
+	| `std.Ok r: req = r
+	| `std.Err e: goto end
+	;;
+
+	fn(req)
+
+:end
+	reqfree(req)
+}
+
+const serve = {srv, fn
 	while srv.running
-		req = std.mk([
-			.id = 0,
-			.params = [][:],
-			.paramb = [][:],
-			.fd = -1,
-			.stdin = [][:]
-		])
-
-		match std.accept(srv.ann)
-		| `std.Ok a: req.fd = a
-		| `std.Err e:
-			reqfree(req)
-			continue
-		;;
-
-		match readrequest(req)
-		| `std.Ok r: req = r
-		| `std.Err e:
-			reqfree(req)
-			continue
-		;;
-
-		fn(req)
-
-		reqfree(req)
+		serve_cb(srv, fn)
 	;;
 
 	std.free(srv)

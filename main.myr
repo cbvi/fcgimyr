@@ -8,12 +8,12 @@ const myfn = {req
 	for kv : req.params
 		match kv
 		| ("SERVER_SOFTWARE", v):
-			std.put("{}\n", v)
+			//std.put("{}\n", v)
 		| _:
 		;;
 	;;
 
-	std.put("{}\n", req.id)
+	//std.put("{}\n", req.id)
 
 	std.try(fcgi.respond(req, res))
 }
