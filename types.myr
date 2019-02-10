@@ -21,6 +21,7 @@ pkg fcgi =
 		`Eshort
 		`Etype rtype
 		`Econn
+		`Emis
 	;;
 
 	type server = struct
@@ -28,6 +29,7 @@ pkg fcgi =
 	;;
 
 	type request = struct
+		id	: uint16
 		fd	: std.fd
 		params	: (byte[:], byte[:])[:]
 		paramb	: byte[:]

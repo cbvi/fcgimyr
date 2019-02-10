@@ -13,7 +13,7 @@ const myfn = {req
 		;;
 	;;
 
-	std.put("{}\n", req.stdin)
+	std.put("{}\n", req.id)
 
 	std.try(fcgi.respond(req, res))
 }

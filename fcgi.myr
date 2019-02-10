@@ -59,7 +59,7 @@ const read_header = {fd
 		std.slfree(junk)
 	;;
 
-	-> `std.Ok (what, content)
+	-> `std.Ok (id, what, content)
 
 :version
 	-> `std.Err `Eversion version
@@ -80,7 +80,7 @@ const prepare_header = {buf, what, id, conlen
 const respond = {req, data
 	var buf : byte[fcgi.HEADER_LEN]
 
-	prepare_header(buf[:], fcgi.Stdout, 1, data.len)
+	prepare_header(buf[:], fcgi.Stdout, req.id, data.len)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
@@ -98,7 +98,7 @@ const respond = {req, data
 	| `std.Err e: goto short
 	;;
 
-	prepare_header(buf[:], fcgi.EndRequest, 1, fcgi.HEADER_LEN)
+	prepare_header(buf[:], fcgi.EndRequest, req.id, fcgi.HEADER_LEN)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
@@ -133,12 +133,11 @@ const read_request = {req
 	var err
 
 	while true
-		var what, content
+		var id, what, content
 
 		match read_header(req.fd)
-		| `std.Ok (w, c):
-			what = w
-			content = c
+		| `std.Ok res:
+			(id, what, content) = res
 		| `std.Err e:
 			err = e
 			goto err
@@ -146,8 +145,14 @@ const read_request = {req
 
 		auto content
 
+		if req.id != 0 && req.id != id
+			err = `Emis
+			goto err
+		;;
+
 		match what
 		| BeginRequest:
+			req.id = id
 		| Params:
 			std.sljoin(&req.paramb, content)
 		| Stdin:
@@ -182,6 +187,7 @@ const serve = {srv, fn
 
 	while true
 		req = std.mk([
+			.id = 0,
 			.params = [][:],
 			.paramb = [][:],
 			.fd = -1,
