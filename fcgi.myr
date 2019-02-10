@@ -174,7 +174,7 @@ const read_request = {req
 	-> `std.Err err
 }
 
-const req_free = {req
+const reqfree = {req
 	std.close(req.fd)
 	std.slfree(req.params)
 	std.slfree(req.paramb)
@@ -197,20 +197,20 @@ const serve = {srv, fn
 		match std.accept(srv.ann)
 		| `std.Ok a: req.fd = a
 		| `std.Err e:
-			req_free(req)
+			reqfree(req)
 			continue
 		;;
 
 		match read_request(req)
 		| `std.Ok r: req = r
 		| `std.Err e:
-			req_free(req)
+			reqfree(req)
 			continue
 		;;
 
 		fn(req)
 
-		req_free(req)
+		reqfree(req)
 	;;
 }
 
