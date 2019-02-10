@@ -10,11 +10,9 @@ impl disposable byte[:] =
 ;;
 
 pkg fcgi =
-	const read_header	: (fd : std.fd -> std.result((rtype, byte[:]), error))
 	const send_response	: (req : request#, data : byte[:] -> std.result(bool, error))
 	const announce		: (ds : byte[:] -> std.result(server#, error))
 	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
-	const req_free		: (req : request# -> void)
 ;;
 
 const read_header = {fd
