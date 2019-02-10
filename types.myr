@@ -25,7 +25,8 @@ pkg fcgi =
 	;;
 
 	type server = struct
-		ann		: std.announce#
+		ann	: std.announce#
+		running	: bool
 	;;
 
 	type request = struct

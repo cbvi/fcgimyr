@@ -13,6 +13,7 @@ pkg fcgi =
 	const announce		: (ds : byte[:] -> std.result(server#, error))
 	const respond		: (req : request#, data : byte[:] -> std.result(bool, error))
 	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
+	const shutdown		: (srv : server# -> void)
 ;;
 
 const readheader = {fd
@@ -182,10 +183,15 @@ const reqfree = {req
 	std.free(req)
 }
 
+const shutdown = {srv
+	srv.running = false
+	std.aclose(srv.ann)
+}
+
 const serve = {srv, fn
 	var req
 
-	while true
+	while srv.running
 		req = std.mk([
 			.id = 0,
 			.params = [][:],
@@ -212,13 +218,16 @@ const serve = {srv, fn
 
 		reqfree(req)
 	;;
+
+	std.free(srv)
 }
 
 const announce = {ds
 	match std.announce(ds)
 	| `std.Ok a:
 		-> `std.Ok std.mk([
-			.ann=a
+			.ann = a,
+			.running = true
 		])
 	| `std.Err e:
 		-> `std.Err `Econn
