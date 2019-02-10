@@ -151,7 +151,10 @@ const read_request = {req
 		| Params:
 			std.sljoin(&req.paramb, content)
 		| Stdin:
-			break
+			std.sljoin(&req.stdin, content)
+			if content.len == 0
+				break
+			;;
 		| _:
 			err = `Etype what
 			goto err
@@ -170,6 +173,7 @@ const req_free = {req
 	std.close(req.fd)
 	std.slfree(req.params)
 	std.slfree(req.paramb)
+	std.slfree(req.stdin)
 	std.free(req)
 }
 
@@ -180,7 +184,8 @@ const serve = {srv, fn
 		req = std.mk([
 			.params = [][:],
 			.paramb = [][:],
-			.fd = -1
+			.fd = -1,
+			.stdin = [][:]
 		])
 
 		match std.accept(srv.ann)
