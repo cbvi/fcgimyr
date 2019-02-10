@@ -31,6 +31,5 @@ pkg fcgi =
 		fd	: std.fd
 		params	: (byte[:], byte[:])[:]
 		paramb	: byte[:]
-		what	: rtype
 	;;
 ;;
