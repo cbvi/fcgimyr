@@ -13,7 +13,7 @@ pkg fcgi =
 	const read_header	: (fd : std.fd -> std.result((rtype, byte[:]), error))
 	const send_response	: (req : request#, data : byte[:] -> std.result(bool, error))
 	const announce		: (ds : byte[:] -> std.result(server#, error))
-	const get_request	: (srv : server# -> std.result(request#, error))
+	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
 	const req_free		: (req : request# -> void)
 ;;
 
@@ -175,36 +175,34 @@ const req_free = {req
 	std.free(req)
 }
 
-const get_request = {srv
+const serve = {srv, fn
 	var req
-	var err
 
-	req = std.mk([
-		.params = [][:],
-		.paramb = [][:],
-		.fd = -1
-	])
+	while true
+		req = std.mk([
+			.params = [][:],
+			.paramb = [][:],
+			.fd = -1
+		])
 
-	match std.accept(srv.ann)
-	| `std.Ok a: req.fd = a
-	| `std.Err e:
-		err = `Econn
-		goto err
+		match std.accept(srv.ann)
+		| `std.Ok a: req.fd = a
+		| `std.Err e:
+			req_free(req)
+			continue
+		;;
+
+		match read_request(req)
+		| `std.Ok r: req = r
+		| `std.Err e:
+			req_free(req)
+			continue
+		;;
+
+		fn(req)
+
+		req_free(req)
 	;;
-
-	match read_request(req)
-	| `std.Ok r: req = r
-	| `std.Err e:
-		err = e
-		goto err
-	;;
-
-	-> `std.Ok req
-
-:err
-	req_free(req)
-
-	-> `std.Err err
 }
 
 const announce = {ds
