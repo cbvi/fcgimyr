@@ -1,8 +1,8 @@
 use std
 
 pkg fcgi =
-	type rtype		= byte
-	type protocolstatus	= byte
+	pkglocal type rtype		= byte
+	pkglocal type protocolstatus	= byte
 
 	pkglocal const Headerlen 		: std.size = 8
 	pkglocal const Version 			: byte = 1
@@ -22,7 +22,7 @@ pkg fcgi =
 	pkglocal const Overloaded		: protocolstatus = 2
 	pkglocal const UnknownRole		: protocolstatus = 3
 
-	type error = union
+	pkglocal type error = union
 		`Eversion byte
 		`Eshort
 		`Etype rtype
@@ -30,12 +30,12 @@ pkg fcgi =
 		`Emis
 	;;
 
-	type server = struct
+	pkglocal type server = struct
 		ann	: std.announce#
 		running	: bool
 	;;
 
-	type request = struct
+	pkglocal type request = struct
 		id	: uint16
 		fd	: std.fd
 		params	: (byte[:], byte[:])[:]

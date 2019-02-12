@@ -24,5 +24,7 @@ const main = {
 	srv = std.try(fcgi.announce("unix!/var/www/run/test.sock"))
 	sys.chown(sys.cstring("/var/www/run/test.sock"), 67, 67)
 
+	std.put("{}\n", srv.running)
+
 	fcgi.serve(srv, myfn)
 }
