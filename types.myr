@@ -4,8 +4,8 @@ pkg fcgi =
 	type rtype		= byte
 	type protocolstatus	= byte
 
-	pkglocal const HEADER_LEN 		: std.size = 8
-	pkglocal const version 			: byte = 1
+	pkglocal const Headerlen 		: std.size = 8
+	pkglocal const Version 			: byte = 1
 
 	pkglocal const BeginRequest		: rtype = 1
 	pkglocal const EndRequest		: rtype = 3

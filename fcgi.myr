@@ -17,7 +17,7 @@ pkg fcgi =
 ;;
 
 const readheader = {fd
-	var buf : byte[fcgi.HEADER_LEN]
+	var buf : byte[fcgi.Headerlen]
 	var content, what, version, id, conlen, padlen
 	var junk
 
@@ -29,7 +29,7 @@ const readheader = {fd
 
 		version		= buf[0]
 
-		if version != fcgi.version
+		if version != fcgi.Version
 			goto version
 		;;
 
@@ -70,7 +70,7 @@ const readheader = {fd
 }
 
 const prepareheader = {buf, what, id, conlen
-	buf[0] = fcgi.version
+	buf[0] = fcgi.Version
 	std.putbe8(buf[1:], what)
 	std.putbe16(buf[2:], id)
 	std.putbe16(buf[4:], conlen)
@@ -85,7 +85,7 @@ const endrequestdata = {buf, appstatus, protocolstatus
 }
 
 const respond = {req, data
-	var buf : byte[fcgi.HEADER_LEN]
+	var buf : byte[fcgi.Headerlen]
 
 	prepareheader(buf[:], fcgi.Stdout, req.id, data.len)
 
@@ -105,7 +105,7 @@ const respond = {req, data
 	| `std.Err e: goto short
 	;;
 
-	prepareheader(buf[:], fcgi.EndRequest, req.id, fcgi.HEADER_LEN)
+	prepareheader(buf[:], fcgi.EndRequest, req.id, fcgi.Headerlen)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
