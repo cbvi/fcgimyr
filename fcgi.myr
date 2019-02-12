@@ -78,6 +78,12 @@ const prepareheader = {buf, what, id, conlen
 	buf[7] = 0	/* reserved space */
 }
 
+const endrequestdata = {buf, appstatus, protocolstatus
+	std.putbe32(buf[:4], 0)			/* appStatus */
+	buf[4] = (protocolstatus : byte)	/* protocolStatus */
+	buf[5] = buf[6] = buf[7] = 0		/* reserved */
+}
+
 const respond = {req, data
 	var buf : byte[fcgi.HEADER_LEN]
 
@@ -109,10 +115,7 @@ const respond = {req, data
 	| `std.Err e: goto short
 	;;
 
-	/* end request data */
-	std.putbe32(buf[:4], 0)			/* appStatus */
-	buf[4] = (fcgi.RequestComplete : byte)	/* protocolStatus */
-	buf[5] = buf[6] = buf[7] = 0		/* reserved */
+	endrequestdata(buf[:], 0, fcgi.RequestComplete)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
