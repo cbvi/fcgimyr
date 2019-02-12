@@ -1,7 +1,8 @@
 use std
 
 pkg fcgi =
-	type rtype	 = byte
+	type rtype		= byte
+	type protocolstatus	= byte
 
 	const HEADER_LEN 		: std.size = 8
 	const version 			: byte = 1
@@ -15,6 +16,11 @@ pkg fcgi =
 	const GetValues			: rtype = 9
 	const UnknownType		: rtype = 11
 	const MaxType			: rtype = UnknownType
+
+	const RequestComplete		: protocolstatus = 0
+	const CantMpxConn		: protocolstatus = 1
+	const Overloaded		: protocolstatus = 2
+	const UnknownRole		: protocolstatus = 3
 
 	type error = union
 		`Eversion byte

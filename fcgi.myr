@@ -110,11 +110,9 @@ const respond = {req, data
 	;;
 
 	/* end request data */
-	std.putbe32(buf[:4], 0)
-	buf[4] = 0
-	buf[5] = 0
-	buf[6] = 0
-	buf[7] = 0
+	std.putbe32(buf[:4], 0)			/* appStatus */
+	buf[4] = (fcgi.RequestComplete : byte)	/* protocolStatus */
+	buf[5] = buf[6] = buf[7] = 0		/* reserved */
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
