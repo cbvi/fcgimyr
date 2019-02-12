@@ -8,7 +8,7 @@ const myfn = {req
 	for kv : req.params
 		match kv
 		| ("SERVER_SOFTWARE", v):
-			//std.put("{}\n", v)
+			std.put("{}\n", v)
 		| _:
 		;;
 	;;

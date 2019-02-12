@@ -4,23 +4,23 @@ pkg fcgi =
 	type rtype		= byte
 	type protocolstatus	= byte
 
-	const HEADER_LEN 		: std.size = 8
-	const version 			: byte = 1
+	pkglocal const HEADER_LEN 		: std.size = 8
+	pkglocal const version 			: byte = 1
 
-	const BeginRequest		: rtype = 1
-	const EndRequest		: rtype = 3
-	const Params			: rtype = 4
-	const Stdin			: rtype = 5
-	const Stdout			: rtype = 6
-	const Data			: rtype = 8
-	const GetValues			: rtype = 9
-	const UnknownType		: rtype = 11
-	const MaxType			: rtype = UnknownType
+	pkglocal const BeginRequest		: rtype = 1
+	pkglocal const EndRequest		: rtype = 3
+	pkglocal const Params			: rtype = 4
+	pkglocal const Stdin			: rtype = 5
+	pkglocal const Stdout			: rtype = 6
+	pkglocal const Data			: rtype = 8
+	pkglocal const GetValues		: rtype = 9
+	pkglocal const UnknownType		: rtype = 11
+	pkglocal const MaxType			: rtype = UnknownType
 
-	const RequestComplete		: protocolstatus = 0
-	const CantMpxConn		: protocolstatus = 1
-	const Overloaded		: protocolstatus = 2
-	const UnknownRole		: protocolstatus = 3
+	pkglocal const RequestComplete		: protocolstatus = 0
+	pkglocal const CantMpxConn		: protocolstatus = 1
+	pkglocal const Overloaded		: protocolstatus = 2
+	pkglocal const UnknownRole		: protocolstatus = 3
 
 	type error = union
 		`Eversion byte
