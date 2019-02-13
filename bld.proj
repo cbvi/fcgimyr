@@ -8,3 +8,8 @@ bin myrcgi =
 	lib fcgi
 	main.myr
 ;;
+
+test f =
+	test/app.myr
+	lib fcgi
+;;
