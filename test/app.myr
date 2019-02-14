@@ -51,9 +51,10 @@ const tests = {
 	header(buf[:], Params, 0, 0)
 	std.try(std.write(sock, buf[:]))
 
-	header(buf[:], Stdin, 4, 0)
+	header(buf[:], Stdin, 4, 4)
 	std.try(std.write(sock, buf[:]))
 	std.try(std.write(sock, "test"))
+	std.try(std.write(sock, "1234"))
 	header(buf[:], Stdin, 0, 0)
 	std.try(std.write(sock, buf[:]))
 
