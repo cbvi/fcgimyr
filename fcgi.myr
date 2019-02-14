@@ -19,7 +19,6 @@ pkg fcgi =
 const readheader = {fd
 	var buf : byte[fcgi.Headerlen]
 	var content, what, version, id, conlen, padlen
-	var junk
 
 	match std.read(fd, buf[:])
 	| `std.Ok sz:
@@ -41,7 +40,7 @@ const readheader = {fd
 	| `std.Err e: goto short
 	;;
 
-	content = std.slalloc(conlen)
+	content = std.slalloc(conlen + padlen)
 
 	match std.read(fd, content)
 	| `std.Ok sz:
@@ -54,13 +53,7 @@ const readheader = {fd
 		goto short
 	;;
 
-	if padlen > 0
-		junk = std.slalloc(padlen)
-		std.read(fd, junk)
-		std.slfree(junk)
-	;;
-
-	-> `std.Ok (id, what, content)
+	-> `std.Ok (id, what, content[:conlen])
 
 :version
 	-> `std.Err `Eversion version
