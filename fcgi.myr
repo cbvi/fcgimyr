@@ -85,8 +85,6 @@ const respond = {req, data
 	while data.len > 0
 		len = data.len > max ? max : data.len
 
-		std.put("{}\n", len)
-
 		prepareheader(buf[:], fcgi.Stdout, req.id, len)
 
 		match std.write(req.fd, buf[:])
