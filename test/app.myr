@@ -51,6 +51,9 @@ const tests = {
 	header(buf[:], Params, 0, 0)
 	std.try(std.write(sock, buf[:]))
 
+	header(buf[:], Stdin, 4, 0)
+	std.try(std.write(sock, buf[:]))
+	std.try(std.write(sock, "test"))
 	header(buf[:], Stdin, 0, 0)
 	std.try(std.write(sock, buf[:]))
 
@@ -59,6 +62,8 @@ const tests = {
 	rec = std.slalloc(std.getbe16(buf[4:6]))
 
 	std.read(sock, rec)
+
+	std.put("==> {}\n", rec)
 
 	testr.run([
 		[.name="test0", .fn={ctx
