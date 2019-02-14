@@ -38,42 +38,56 @@ const header = {buf, rtype, conlen, padlen
 	buf[7] = 0
 }
 
+const header_test = {ctx, sock
+	var hdr : byte[8]
+	var version, what, id, conlen, padlen
+
+	header(hdr[:], BeginRequest, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], Params, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], Stdin, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	std.try(std.read(sock, hdr[:]))
+
+	version = hdr[0]
+	what = hdr[1]
+	id = std.getbe16(hdr[2:4])
+	conlen = std.getbe16(hdr[4:6])
+	padlen = hdr[6]
+
+	testr.check(ctx, version == 1, "wrong version {}", version)
+	testr.check(ctx, what == Stdout, "wrong type {}", what)
+	testr.check(ctx, id == 1, "wrong id {}", id)
+	testr.check(ctx, conlen == restext.len, "wrong conlen {}", conlen)
+	testr.check(ctx, padlen == 0, "wrong padlen {}", padlen)
+}
+
+const content_test = {ctx, sock
+	var content = std.slalloc(restext.len)
+
+	std.try(std.read(sock, content))
+
+	match content
+	| restext: testr.ok(ctx)
+	| v: testr.fail(ctx, "wrong content \"{}\"", v)
+	;;
+}
+
 const tests = {
 	var sock
-	var buf : byte[8]
-	var rec
 
 	sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
 
-	header(buf[:], BeginRequest, 0, 0)
-	std.try(std.write(sock, buf[:]))
-
-	header(buf[:], Params, 0, 0)
-	std.try(std.write(sock, buf[:]))
-
-	header(buf[:], Stdin, 4, 4)
-	std.try(std.write(sock, buf[:]))
-	std.try(std.write(sock, "test"))
-	std.try(std.write(sock, "1234"))
-	header(buf[:], Stdin, 0, 0)
-	std.try(std.write(sock, buf[:]))
-
-	std.read(sock, buf[:])
-
-	rec = std.slalloc(std.getbe16(buf[4:6]))
-
-	std.read(sock, rec)
-
-	std.put("==> {}\n", rec)
-
 	testr.run([
-		[.name="test0", .fn={ctx
-			match rec
-			| restext: std.put("ok\n")
-			| val: testr.fail(ctx, "wrong value {}", val)
-			;;
+		[.name="header", .fn={ctx
+			header_test(ctx, sock)
 		}],
-		[.name="test1", .fn={ctx
+		[.name="content", .fn={ctx
+			content_test(ctx, sock)
 		}],
 	][:])
 
