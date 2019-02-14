@@ -86,8 +86,37 @@ const endrequestdata = {buf, appstatus, protocolstatus
 
 const respond = {req, data
 	var buf : byte[fcgi.Headerlen]
+	var len
+	const max = 65535
 
-	prepareheader(buf[:], fcgi.Stdout, req.id, data.len)
+	while data.len > 0
+		len = data.len > max ? max : data.len
+
+		std.put("{}\n", len)
+
+		prepareheader(buf[:], fcgi.Stdout, req.id, len)
+
+		match std.write(req.fd, buf[:])
+		| `std.Ok sz:
+			if sz < buf.len
+				goto short
+			;;
+		| `std.Err e: goto short
+		;;
+
+		match std.write(req.fd, data[:len])
+		| `std.Ok sz:
+			if sz < len
+				goto short
+			;;
+		| `std.Err e: goto short
+		;;
+
+		data = data[len:]
+	;;
+
+	/* empty stdout record */
+	prepareheader(buf[:], fcgi.Stdout, req.id, 0)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
@@ -97,15 +126,8 @@ const respond = {req, data
 	| `std.Err e: goto short
 	;;
 
-	match std.write(req.fd, data)
-	| `std.Ok sz:
-		if sz < data.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
-
-	prepareheader(buf[:], fcgi.EndRequest, req.id, fcgi.Headerlen)
+	prepareheader(buf[:], fcgi.EndRequest, req.id,
+			fcgi.Headerlen)
 
 	match std.write(req.fd, buf[:])
 	| `std.Ok sz:
