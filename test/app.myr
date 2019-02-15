@@ -40,7 +40,7 @@ const header = {buf, rtype, conlen, padlen
 	buf[7] = 0
 }
 
-const header_test = {ctx
+const basic_test = {ctx
 	var sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
 
 	var hdr : byte[8]
@@ -128,14 +128,18 @@ const params_test = {ctx
 	| v: testr.fail(ctx, "wrong content \"{}\"", v)
 	;;
 
+	std.try(std.read(sock, hdr[:]))
+	std.try(std.read(sock, hdr[:]))
+	std.try(std.read(sock, hdr[:]))
+
 	std.slfree(buf)
 	std.close(sock)
 }
 
 const tests = {
 	testr.run([
-		[.name="header", .fn={ctx
-			header_test(ctx)
+		[.name="basic", .fn={ctx
+			basic_test(ctx)
 		}],
 		[.name="params", .fn={ctx
 			params_test(ctx)
