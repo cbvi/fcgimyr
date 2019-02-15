@@ -20,7 +20,7 @@ const readheader = {fd
 	var buf : byte[fcgi.Headerlen]
 	var content, what, version, id, conlen, padlen
 
-	match std.read(fd, buf[:])
+	match std.readall(fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -42,7 +42,7 @@ const readheader = {fd
 
 	content = std.slalloc(conlen + padlen)
 
-	match std.read(fd, content)
+	match std.readall(fd, content)
 	| `std.Ok sz:
 		if sz < content.len
 			std.slfree(content)
@@ -87,7 +87,7 @@ const respond = {req, data
 
 		prepareheader(buf[:], fcgi.Stdout, req.id, len)
 
-		match std.write(req.fd, buf[:])
+		match std.writeall(req.fd, buf[:])
 		| `std.Ok sz:
 			if sz < buf.len
 				goto short
@@ -95,7 +95,7 @@ const respond = {req, data
 		| `std.Err e: goto short
 		;;
 
-		match std.write(req.fd, data[:len])
+		match std.writeall(req.fd, data[:len])
 		| `std.Ok sz:
 			if sz < len
 				goto short
@@ -109,7 +109,7 @@ const respond = {req, data
 	/* empty stdout record */
 	prepareheader(buf[:], fcgi.Stdout, req.id, 0)
 
-	match std.write(req.fd, buf[:])
+	match std.writeall(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -120,7 +120,7 @@ const respond = {req, data
 	prepareheader(buf[:], fcgi.EndRequest, req.id,
 			fcgi.Headerlen)
 
-	match std.write(req.fd, buf[:])
+	match std.writeall(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
@@ -130,7 +130,7 @@ const respond = {req, data
 
 	endrequestdata(buf[:], 0, fcgi.RequestComplete)
 
-	match std.write(req.fd, buf[:])
+	match std.writeall(req.fd, buf[:])
 	| `std.Ok sz:
 		if sz < buf.len
 			goto short
