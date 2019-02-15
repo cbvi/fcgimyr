@@ -11,19 +11,22 @@ const Stdout = 6
 
 const restext = "Content-Type: text/html\r\n\r\ntest"
 
+const sockpath = "unix!/tmp/fcgitest.sock"
+
 const cb = {req
 	var buf
 
 	buf = std.fmt("{}", restext)
 
 	for param : req.params
-		std.put("{}\n", param)
 		match param
 		| ("SERVER_SOFTWARE", v):
-			buf = std.sljoin(&buf, v)
+			std.sljoin(&buf, v)
 		| _:
 		;;
 	;;
+
+	std.sljoin(&buf, req.stdin)
 
 	std.try(fcgi.respond(req, buf))
 
@@ -33,7 +36,7 @@ const cb = {req
 const main = {
 	var srv
 
-	srv = std.try(fcgi.announce("unix!/tmp/fcgitest.sock"))
+	srv = std.try(fcgi.announce(sockpath))
 
 	thread.spawn({
 		fcgi.serve(srv, cb)
@@ -56,7 +59,7 @@ const header = {buf, rtype, conlen, padlen
 }
 
 const basic_test = {ctx
-	var sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
+	var sock = std.try(std.dial(sockpath))
 
 	var hdr : byte[8]
 	var buf
@@ -109,7 +112,7 @@ const basic_test = {ctx
 }
 
 const params_test = {ctx
-	var sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
+	var sock = std.try(std.dial(sockpath))
 	var hdr : byte[8]
 	var conlen, padlen, buf
 	var params
@@ -159,6 +162,77 @@ const params_test = {ctx
 	std.close(sock)
 }
 
+const stdin_test = {ctx
+	var sock = std.try(std.dial(sockpath))
+	var conlen, padlen, buf
+	var hdr : byte[8]
+	var stdin
+	var sbuf, rbuf
+	var expected
+
+	/* this is an absurdly large size to test content sent in chunks */ 
+	stdin = std.slalloc(209123)
+
+	std.randbytes(stdin[:])
+
+	header(hdr[:], BeginRequest, 0, 0)
+	std.try(std.writeall(sock, hdr[:]))
+
+	header(hdr[:], Params, 0, 0)
+	std.try(std.writeall(sock, hdr[:]))
+
+	sbuf = stdin
+
+	while sbuf.len > 0
+		const max = 65535
+		var len = sbuf.len > max ? max : sbuf.len
+
+		header(hdr[:], Stdin, len, 0)
+		std.try(std.writeall(sock, hdr[:]))
+		std.try(std.writeall(sock, sbuf[:len]))
+
+		sbuf = sbuf[len:]
+	;;
+
+	header(hdr[:], Stdin, 0, 0)
+	std.try(std.writeall(sock, hdr[:]))
+
+	rbuf = [][:]
+
+	while true
+		std.try(std.readall(sock, hdr[:]))
+
+		conlen = std.getbe16(hdr[4:6])
+		padlen = std.getbe8(hdr[6:])
+
+		buf = std.slalloc(conlen + padlen)
+		std.try(std.readall(sock, buf))
+		std.sljoin(&rbuf, buf)
+		std.slfree(buf)
+
+		if conlen == 0
+			break
+		;;
+	;;
+
+	expected = std.fmt("{}{}", restext, stdin)
+
+	if std.sleq(expected, rbuf)
+		testr.ok(ctx)
+	else
+		testr.fail(ctx, "data returned didn't match stdin sent")
+	;;
+
+	std.try(std.readall(sock, hdr[:]))
+	std.try(std.readall(sock, hdr[:]))
+	std.try(std.readall(sock, hdr[:]))
+
+	std.slfree(stdin)
+	std.slfree(rbuf)
+	std.slfree(expected)
+	std.close(sock)
+}
+
 const tests = {
 	testr.run([
 		[.name="basic", .fn={ctx
@@ -166,6 +240,9 @@ const tests = {
 		}],
 		[.name="params", .fn={ctx
 			params_test(ctx)
+		}],
+		[.name="stdin", .fn={ctx
+			stdin_test(ctx)
 		}],
 	][:])
 }
