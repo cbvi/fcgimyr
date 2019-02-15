@@ -27,6 +27,8 @@ const main = {
 	tests()
 
 	fcgi.shutdown(srv)
+
+	std.exit(0)
 }
 
 const header = {buf, rtype, conlen, padlen
@@ -38,8 +40,11 @@ const header = {buf, rtype, conlen, padlen
 	buf[7] = 0
 }
 
-const header_test = {ctx, sock
+const header_test = {ctx
+	var sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
+
 	var hdr : byte[8]
+	var buf
 	var version, what, id, conlen, padlen
 
 	header(hdr[:], BeginRequest, 0, 0)
@@ -64,32 +69,76 @@ const header_test = {ctx, sock
 	testr.check(ctx, id == 1, "wrong id {}", id)
 	testr.check(ctx, conlen == restext.len, "wrong conlen {}", conlen)
 	testr.check(ctx, padlen == 0, "wrong padlen {}", padlen)
-}
 
-const content_test = {ctx, sock
-	var content = std.slalloc(restext.len)
+	buf = std.slalloc((conlen + padlen : std.size))
 
-	std.try(std.read(sock, content))
+	std.try(std.read(sock, buf))
 
-	match content
+	match buf
 	| restext: testr.ok(ctx)
 	| v: testr.fail(ctx, "wrong content \"{}\"", v)
 	;;
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[1] == Stdout, "wrong type for final stdout {}", hdr[1])
+	testr.check(ctx, std.getbe16(hdr[4:6]) == 0, "final stdout has content")
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[1] == EndRequest, "wrong type for end {}", hdr[1])
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[4] == 0, "wrong protocol status {}", hdr[4])
+
+	std.slfree(buf)
+	std.close(sock)
+}
+
+const params_test = {ctx
+	var sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
+	var hdr : byte[8]
+	var conlen, padlen, buf
+	var hc = "\0\0\0\0\0HTTP_COOKIEmtest=1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128; Auth-Type=http; Auth-Token=pfGXCtG1aZnpPIEl25HtTyzBvi77W1M6v07sd1blwIYTAHct"
+	hc[0] = 11
+	hc[1] = 72
+	hc[2] = 84
+	hc[3] = 84
+	hc[4] = 80
+
+	header(hdr[:], BeginRequest, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], Params, hc.len, 0)
+	std.try(std.write(sock, hdr[:]))
+	std.try(std.write(sock, hc))
+
+	header(hdr[:], Stdin, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	std.try(std.read(sock, hdr[:]))
+
+	conlen = std.getbe16(hdr[4:6])
+	padlen = std.getbe8(hdr[6:])
+
+	buf = std.slalloc(conlen + padlen)
+
+	std.try(std.read(sock, buf))
+
+	match buf
+	| restext: testr.ok(ctx)
+	| v: testr.fail(ctx, "wrong content \"{}\"", v)
+	;;
+
+	std.slfree(buf)
+	std.close(sock)
 }
 
 const tests = {
-	var sock
-
-	sock = std.try(std.dial("unix!/tmp/fcgitest.sock"))
-
 	testr.run([
 		[.name="header", .fn={ctx
-			header_test(ctx, sock)
+			header_test(ctx)
 		}],
-		[.name="content", .fn={ctx
-			content_test(ctx, sock)
+		[.name="params", .fn={ctx
+			params_test(ctx)
 		}],
 	][:])
-
-	std.close(sock)
 }
