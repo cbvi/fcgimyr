@@ -246,4 +246,7 @@ const tests = {
 			stdin_test(ctx)
 		}],
 	][:])
+
+	while true
+	;;
 }
