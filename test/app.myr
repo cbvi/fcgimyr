@@ -171,7 +171,8 @@ const stdin_test = {ctx
 	var expected
 
 	/* this is an absurdly large size to test content sent in chunks */ 
-	stdin = std.slalloc(209123)
+	//stdin = std.slalloc(209123)
+	stdin = std.slalloc(200000123)
 
 	std.randbytes(stdin[:])
 

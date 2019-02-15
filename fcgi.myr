@@ -3,12 +3,6 @@ use std
 use "params"
 use "types"
 
-impl disposable byte[:] =
-	__dispose__ = {b
-		std.slfree(b)
-	}
-;;
-
 pkg fcgi =
 	const announce		: (ds : byte[:] -> std.result(server#, error))
 	const respond		: (req : request#, data : byte[:] -> std.result(bool, error))
@@ -16,9 +10,9 @@ pkg fcgi =
 	const shutdown		: (srv : server# -> void)
 ;;
 
-const readheader = {fd
+const readheader = {fd, content
 	var buf : byte[fcgi.Headerlen]
-	var content, what, version, id, conlen, padlen
+	var what, version, id, conlen, padlen
 
 	match std.readall(fd, buf[:])
 	| `std.Ok sz:
@@ -40,20 +34,15 @@ const readheader = {fd
 	| `std.Err e: goto short
 	;;
 
-	content = std.slalloc(conlen + padlen)
-
-	match std.readall(fd, content)
+	match std.readall(fd, content[:conlen + padlen])
 	| `std.Ok sz:
-		if sz < content.len
-			std.slfree(content)
+		if sz < conlen + padlen
 			goto short
 		;;
-	| `std.Err e:
-		std.slfree(content)
-		goto short
+	| `std.Err e: goto short
 	;;
 
-	-> `std.Ok (id, what, content[:conlen])
+	-> `std.Ok (id, what, conlen)
 
 :version
 	-> `std.Err `Eversion version
@@ -146,19 +135,18 @@ const respond = {req, data
 
 const readrequest = {req
 	var err
+	var content : byte[65535+255]
 
 	while true
-		var id, what, content
+		var id, what, conlen
 
-		match readheader(req.fd)
+		match readheader(req.fd, content[:])
 		| `std.Ok res:
-			(id, what, content) = res
+			(id, what, conlen) = res
 		| `std.Err e:
 			err = e
 			goto err
 		;;
-
-		auto content
 
 		if req.id != 0 && req.id != id
 			err = `Emis
@@ -169,10 +157,10 @@ const readrequest = {req
 		| BeginRequest:
 			req.id = id
 		| Params:
-			std.sljoin(&req.paramb, content)
+			std.sljoin(&req.paramb, content[:conlen])
 		| Stdin:
-			std.sljoin(&req.stdin, content)
-			if content.len == 0
+			std.sljoin(&req.stdin, content[:conlen])
+			if conlen == 0
 				break
 			;;
 		| _:
