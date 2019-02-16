@@ -170,14 +170,14 @@ const stdin_test = {ctx
 	var sbuf, rbuf
 	var expected
 
-	/* this is an absurdly large size to test content sent in chunks */ 
-	//stdin = std.slalloc(209123)
-	stdin = std.slalloc(200000123)
+	/* use a large allocation to test data transceived in chunks */
+	stdin = std.slalloc(330000)
 
 	std.randbytes(stdin[:])
 
-	header(hdr[:], BeginRequest, 0, 0)
+	header(hdr[:], BeginRequest, 0, 255) /* test sending the max padding */
 	std.try(std.writeall(sock, hdr[:]))
+	std.try(std.writeall(sock, stdin[0:255]))
 
 	header(hdr[:], Params, 0, 0)
 	std.try(std.writeall(sock, hdr[:]))
@@ -187,12 +187,18 @@ const stdin_test = {ctx
 	while sbuf.len > 0
 		const max = 65535
 		var len = sbuf.len > max ? max : sbuf.len
+		var padding
 
-		header(hdr[:], Stdin, len, 0)
+		padding = std.slalloc(std.rand(0, 255))
+		std.randbytes(padding[:])
+
+		header(hdr[:], Stdin, len, padding.len)
 		std.try(std.writeall(sock, hdr[:]))
 		std.try(std.writeall(sock, sbuf[:len]))
+		std.try(std.writeall(sock, padding[:]))
 
 		sbuf = sbuf[len:]
+		std.slfree(padding)
 	;;
 
 	header(hdr[:], Stdin, 0, 0)
@@ -246,7 +252,4 @@ const tests = {
 			stdin_test(ctx)
 		}],
 	][:])
-
-	while true
-	;;
 }
