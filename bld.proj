@@ -9,7 +9,7 @@ bin myrcgi =
 	main.myr
 ;;
 
-test f =
+test app =
 	test/app.myr
 	lib fcgi
 ;;
