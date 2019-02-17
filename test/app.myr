@@ -46,9 +46,6 @@ const main = {
 
 	fcgi.shutdown(srv)
 
-	while true
-	;;
-
 	std.exit(0)
 }
 
@@ -174,7 +171,7 @@ const stdin_test = {ctx
 	var expected
 
 	/* use a large allocation to test data transceived in chunks */
-	stdin = std.slalloc(33000000)
+	stdin = std.slalloc(330000)
 
 	std.randbytes(stdin[:])
 
