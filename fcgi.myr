@@ -136,6 +136,10 @@ const respond = {req, data
 const readrequest = {req
 	var err
 	var content : byte[65535+255]
+	var params, stdin
+
+	params = std.mksb()
+	stdin = std.mksb()
 
 	while true
 		var id, what, conlen
@@ -157,17 +161,20 @@ const readrequest = {req
 		| BeginRequest:
 			req.id = id
 		| Params:
-			std.sljoin(&req.paramb, content[:conlen])
+			std.sbputs(params, content[:conlen])
 		| Stdin:
-			std.sljoin(&req.stdin, content[:conlen])
 			if conlen == 0
 				break
 			;;
+			std.sbputs(stdin, content[:conlen])
 		| _:
 			err = `Etype what
 			goto err
 		;;
 	;;
+
+	req.paramb = std.sbfin(params)
+	req.stdin = std.sbfin(stdin)
 
 	parseparams(req, req.paramb)
 
