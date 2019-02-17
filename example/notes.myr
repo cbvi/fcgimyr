@@ -1,0 +1,113 @@
+use std
+use fcgi
+
+type note = struct
+	title : byte[:]
+	body : byte[:]
+;;
+
+var notes
+
+const mknote = {stdin
+	var s = std.sldup(stdin)
+	std.slpush(&notes, (notes.len, s))
+	-> s
+}
+
+const shownote = {query
+	var q : byte[:][2]
+	var id
+
+	std.bstrsplit(q[:], query, "=")
+
+	if !std.sleq(q[0], "id")
+		goto err
+	;;
+	
+	match std.intparse(q[1])
+	| `std.Some n: id = n
+	| `std.None: goto err
+	;;
+
+	if notes.len <= id
+		goto err
+	;;
+
+	-> `std.Some notes[id]
+
+:err
+	-> `std.None
+}
+
+
+const handler = {req
+	var b = [][:]
+	var meth = "GET", query = ""
+
+	std.sljoin(&b, "Content-Type: text/html\r\n\r\n")
+
+	for kv : req.params
+		match kv
+		| ("REQUEST_METHOD", v): meth = v
+		| ("QUERY_STRING", v): query = v
+		| _:
+		;;
+	;;
+
+	if query.len > 0
+		match shownote(query)
+		| `std.Some (id, text):
+			var s = std.fmt("<p>{}</p>", text)
+			std.sljoin(&b, s)
+			std.slfree(s)
+		| `std.None:
+			std.sljoin(&b, "<p>invalid note</p>")
+		;;
+	else
+		std.sljoin(&b,
+			"<form method=\"POST\">" \
+			"title: <input type=\"text\" name=\"title\" style=\"width:40%;\"><br>" \
+			"text: <textarea name=\"body\" rows=\"5\" style=\"width:40%;\"></textarea><br>" \
+			"<input type=\"submit\" value=\"create\"><br>" \
+			"</form>" \
+		)
+	;;
+
+	if std.sleq(meth, "POST") && req.stdin.len > 0
+		var n = mknote(req.stdin)
+		var s = std.fmt("created new note <i>{}</i><br><br>", n)
+		std.sljoin(&b, s)
+		std.slfree(s)
+	;;
+
+	for (id, n) : notes
+		var s = std.fmt("<a href=\"?id={}\">{}</a> {}<br>", id, id, n)
+		std.sljoin(&b, s)
+		std.slfree(s)
+	;;
+
+	fcgi.respond(req, b)
+
+	std.slfree(b)
+}
+
+const main = {args
+	var srv
+	var path, unix
+
+	path = std.optparse(args, &[
+		.argdesc = "path",
+		.minargs = 1,
+		.maxargs = 1,
+	]).args[0]
+
+	unix = std.fmt("unix!{}", path)
+
+	srv = std.try(fcgi.announce(unix))
+
+	notes = [][:]
+
+	fcgi.serve(srv, handler)
+
+	std.slfree(unix)
+}

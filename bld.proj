@@ -9,6 +9,11 @@ bin myrcgi =
 	main.myr
 ;;
 
+bin notes =
+	lib fcgi
+	example/notes.myr
+;;
+
 test app =
 	test/app.myr
 	lib fcgi
