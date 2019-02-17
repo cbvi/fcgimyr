@@ -60,6 +60,7 @@ const handler = {req
 			var s = std.fmt("<p>{}</p>", text)
 			std.sljoin(&b, s)
 			std.slfree(s)
+			std.sljoin(&b, "<p><a href=\"?\">&lt; back</a></p>")
 		| `std.None:
 			std.sljoin(&b, "<p>invalid note</p>")
 		;;
@@ -102,12 +103,10 @@ const main = {args
 	]).args[0]
 
 	unix = std.fmt("unix!{}", path)
-
 	srv = std.try(fcgi.announce(unix))
+	std.slfree(unix)
 
 	notes = [][:]
 
 	fcgi.serve(srv, handler)
-
-	std.slfree(unix)
 }
