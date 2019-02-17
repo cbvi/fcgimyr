@@ -171,7 +171,7 @@ const stdin_test = {ctx
 	var conlen, padlen, buf
 	var hdr : byte[8]
 	var stdin
-	var sbuf, rbuf
+	var sb, sbuf, rbuf
 	var expected
 
 	/* use a large allocation to test data transceived in chunks */
@@ -208,7 +208,7 @@ const stdin_test = {ctx
 	header(hdr[:], Stdin, 0, 0)
 	std.try(std.writeall(sock, hdr[:]))
 
-	rbuf = [][:]
+	sb = std.mksb()
 
 	while true
 		std.try(std.readall(sock, hdr[:]))
@@ -218,7 +218,7 @@ const stdin_test = {ctx
 
 		buf = std.slalloc(conlen + padlen)
 		std.try(std.readall(sock, buf))
-		std.sljoin(&rbuf, buf)
+		std.sbputs(sb, buf)
 		std.slfree(buf)
 
 		if conlen == 0
@@ -226,6 +226,7 @@ const stdin_test = {ctx
 		;;
 	;;
 
+	rbuf = std.sbfin(sb)
 	expected = std.fmt("{}{}", restext, stdin)
 
 	if std.sleq(expected, rbuf)
