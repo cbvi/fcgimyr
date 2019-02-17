@@ -14,20 +14,24 @@ const restext = "Content-Type: text/html\r\n\r\ntest"
 const sockpath = "unix!/tmp/fcgitest.sock"
 
 const cb = {req
+	var sb
 	var buf
 
-	buf = std.fmt("{}", restext)
+	sb = std.mksb()
+
+	std.sbputs(sb, restext)
 
 	for param : req.params
 		match param
 		| ("SERVER_SOFTWARE", v):
-			std.sljoin(&buf, v)
+			std.sbputs(sb, v)
 		| _:
 		;;
 	;;
 
-	std.sljoin(&buf, req.stdin)
+	std.sbputs(sb, req.stdin)
 
+	buf = std.sbfin(sb)
 	std.try(fcgi.respond(req, buf))
 
 	std.slfree(buf)
