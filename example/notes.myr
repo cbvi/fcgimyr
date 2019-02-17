@@ -41,10 +41,12 @@ const shownote = {query
 
 
 const handler = {req
-	var b = [][:]
+	var b, response
 	var meth = "GET", query = ""
 
-	std.sljoin(&b, "Content-Type: text/html\r\n\r\n")
+	b = std.mksb()
+
+	std.sbputs(b, "Content-Type: text/html\r\n\r\n")
 
 	for kv : req.params
 		match kv
@@ -58,14 +60,14 @@ const handler = {req
 		match shownote(query)
 		| `std.Some (id, text):
 			var s = std.fmt("<p>{}</p>", text)
-			std.sljoin(&b, s)
+			std.sbputs(b, s)
 			std.slfree(s)
-			std.sljoin(&b, "<p><a href=\"?\">&lt; back</a></p>")
+			std.sbputs(b, "<p><a href=\"?\">&lt; back</a></p>")
 		| `std.None:
-			std.sljoin(&b, "<p>invalid note</p>")
+			std.sbputs(b, "<p>invalid note</p>")
 		;;
 	else
-		std.sljoin(&b,
+		std.sbputs(b,
 			"<form method=\"POST\">" \
 			"title: <input type=\"text\" name=\"title\" style=\"width:40%;\"><br>" \
 			"text: <textarea name=\"body\" rows=\"5\" style=\"width:40%;\"></textarea><br>" \
@@ -77,19 +79,20 @@ const handler = {req
 	if std.sleq(meth, "POST") && req.stdin.len > 0
 		var n = mknote(req.stdin)
 		var s = std.fmt("created new note <i>{}</i><br><br>", n)
-		std.sljoin(&b, s)
+		std.sbputs(b, s)
 		std.slfree(s)
 	;;
 
 	for (id, n) : notes
 		var s = std.fmt("<a href=\"?id={}\">{}</a> {}<br>", id, id, n)
-		std.sljoin(&b, s)
+		std.sbputs(b, s)
 		std.slfree(s)
 	;;
 
-	fcgi.respond(req, b)
+	response = std.sbfin(b)
+	fcgi.respond(req, response)
 
-	std.slfree(b)
+	std.slfree(response)
 }
 
 const main = {args
