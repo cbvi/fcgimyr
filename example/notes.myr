@@ -6,12 +6,20 @@ type note = struct
 	body : byte[:]
 ;;
 
+var srv
 var notes
 
 const mknote = {stdin
 	var s = std.sldup(stdin)
 	std.slpush(&notes, (notes.len, s))
 	-> s
+}
+
+const notesfree = {n
+	for (i, s) : n
+		std.slfree(s)
+	;;
+	std.slfree(n)
 }
 
 const shownote = {query
@@ -43,6 +51,7 @@ const shownote = {query
 const handler = {req
 	var b, response
 	var meth = "GET", query = ""
+	var stop = false
 
 	b = std.mksb()
 
@@ -54,6 +63,10 @@ const handler = {req
 		| ("QUERY_STRING", v): query = v
 		| _:
 		;;
+	;;
+
+	if std.sleq(query, "stop")
+		stop = true
 	;;
 
 	if query.len > 0
@@ -93,11 +106,16 @@ const handler = {req
 	fcgi.respond(req, response)
 
 	std.slfree(response)
+
+	if stop
+		fcgi.shutdown(srv)
+	;;
 }
 
 const main = {args
-	var srv
 	var opts, path, unix
+
+	std.startalloctrace("/tmp/trace.out")
 
 	opts = std.optparse(args, &[
 		.argdesc = "path",
@@ -116,4 +134,8 @@ const main = {args
 	notes = [][:]
 
 	fcgi.serve(srv, handler)
+
+	notesfree(notes)
+
+	std.endalloctrace()
 }
