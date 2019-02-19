@@ -10,9 +10,15 @@ var srv
 var notes
 
 const mknote = {stdin
-	var s = std.sldup(stdin)
+	var s
+
+	if !std.hasprefix(stdin, "title=")
+		-> `std.None
+	;;
+
+	s = std.sldup(stdin)
 	std.slpush(&notes, (notes.len, s))
-	-> s
+	-> `std.Some s
 }
 
 const notesfree = {n
@@ -90,10 +96,15 @@ const handler = {req
 	;;
 
 	if std.sleq(meth, "POST") && req.stdin.len > 0
-		var n = mknote(req.stdin)
-		var s = std.fmt("created new note <i>{}</i><br><br>", n)
-		std.sbputs(b, s)
-		std.slfree(s)
+		match mknote(req.stdin)
+		| `std.Some n:
+			var s
+
+			s = std.fmt("created new note <i>{}</i><br>", n)
+			std.sbputs(b, s)
+			std.slfree(s)
+		| `std.None:
+		;;
 	;;
 
 	for (id, n) : notes
