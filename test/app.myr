@@ -13,9 +13,13 @@ const restext = "Content-Type: text/html\r\n\r\ntest"
 
 const sockpath = "unix!/tmp/fcgitest.sock"
 
+var srv
+var mtx
+
 const cb = {req
 	var sb
 	var buf
+	var stop = false
 
 	sb = std.mksb()
 
@@ -25,6 +29,8 @@ const cb = {req
 		match param
 		| ("SERVER_SOFTWARE", v):
 			std.sbputs(sb, v)
+		| ("TEST_STOP", v):
+			stop = true
 		| _:
 		;;
 	;;
@@ -35,20 +41,28 @@ const cb = {req
 	std.try(fcgi.respond(req, buf))
 
 	std.slfree(buf)
+
+	if stop
+		fcgi.shutdown(srv)
+	;;
 }
 
 const main = {
-	var srv
-
+	mtx = thread.mkmtx()
 	srv = std.try(fcgi.announce(sockpath))
 
 	thread.spawn({
+		thread.mtxlock(&mtx)
 		fcgi.serve(srv, cb)
+		thread.mtxunlock(&mtx)
 	})
 
 	tests()
 
-	fcgi.shutdown(srv)
+	stopsrv()
+
+	thread.mtxlock(&mtx)
+	thread.mtxunlock(&mtx)
 
 	std.exit(0)
 }
@@ -244,6 +258,44 @@ const stdin_test = {ctx
 	std.slfree(expected)
 	std.close(sock)
 }
+
+const stopsrv = {
+	var sock = std.try(std.dial(sockpath))
+	var hdr : byte[8]
+	var conlen, padlen, buf
+	var params = "\0\0TEST_STOP1"
+
+	params[0] = 9
+	params[1] = 1
+
+
+	header(hdr[:], BeginRequest, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], Params, params.len, 0)
+	std.try(std.write(sock, hdr[:]))
+	std.try(std.write(sock, params))
+
+	header(hdr[:], Stdin, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	std.try(std.read(sock, hdr[:]))
+
+	conlen = std.getbe16(hdr[4:6])
+	padlen = std.getbe8(hdr[6:])
+
+	buf = std.slalloc(conlen + padlen)
+
+	std.try(std.read(sock, buf))
+
+	std.try(std.read(sock, hdr[:]))
+	std.try(std.read(sock, hdr[:]))
+	std.try(std.read(sock, hdr[:]))
+
+	std.slfree(buf)
+	std.close(sock)
+}
+
 
 const tests = {
 	testr.run([
