@@ -178,7 +178,7 @@ const readrequest = {req
 
 	parseparams(req, req.paramb)
 
-	-> `std.Ok req
+	-> `std.Ok void
 
 :err
 	-> `std.Err err
@@ -189,7 +189,6 @@ const reqfree = {req
 	std.slfree(req.params)
 	std.slfree(req.paramb)
 	std.slfree(req.stdin)
-	std.free(req)
 }
 
 const shutdown = {srv
@@ -198,30 +197,28 @@ const shutdown = {srv
 }
 
 const serve_cb = {srv, fn
-	var req
+	var req : request
 
-	req = std.mk([
-		.id = 0,
-		.params = [][:],
-		.paramb = [][:],
-		.fd = -1,
-		.stdin = [][:]
-	])
+	req.id = 0
+	req.params = [][:]
+	req.paramb = [][:]
+	req.fd = -1
+	req.stdin = [][:]
 
 	match std.accept(srv.ann)
 	| `std.Ok a: req.fd = a
 	| `std.Err e: goto end
 	;;
 
-	match readrequest(req)
-	| `std.Ok r: req = r
+	match readrequest(&req)
+	| `std.Ok _:
 	| `std.Err e: goto end
 	;;
 
-	fn(req)
+	fn(&req)
 
 :end
-	reqfree(req)
+	reqfree(&req)
 }
 
 const serve = {srv, fn
