@@ -181,6 +181,8 @@ const readrequest = {req
 	-> `std.Ok void
 
 :err
+	std.sbfree(params)
+	std.sbfree(stdin)
 	-> `std.Err err
 }
 
