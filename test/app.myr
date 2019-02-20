@@ -14,7 +14,7 @@ const restext = "Content-Type: text/html\r\n\r\ntest"
 const sockpath = "unix!/tmp/fcgitest.sock"
 
 var srv
-var mtx
+var wg
 
 const cb = {req
 	var sb
@@ -48,21 +48,19 @@ const cb = {req
 }
 
 const main = {
-	mtx = thread.mkmtx()
+	wg = thread.mkwg(1)
 	srv = std.try(fcgi.announce(sockpath))
 
 	thread.spawn({
-		thread.mtxlock(&mtx)
 		fcgi.serve(srv, cb)
-		thread.mtxunlock(&mtx)
+		thread.wgpost(&wg)
 	})
 
 	tests()
 
 	stopsrv()
 
-	thread.mtxlock(&mtx)
-	thread.mtxunlock(&mtx)
+	thread.wgwait(&wg)
 
 	std.exit(0)
 }
