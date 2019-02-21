@@ -1,4 +1,5 @@
 use std
+use sys
 use fcgi
 
 type note = struct
@@ -71,10 +72,6 @@ const handler = {req
 		;;
 	;;
 
-	if std.sleq(query, "stop")
-		stop = true
-	;;
-
 	if query.len > 0
 		match shownote(query)
 		| `std.Some (id, text):
@@ -117,10 +114,17 @@ const handler = {req
 	fcgi.respond(req, response)
 
 	std.slfree(response)
+}
 
-	if stop
-		fcgi.shutdown(srv)
-	;;
+const sighandler = {
+	var act, oact
+	act = [
+		.handler = ({
+			std.put("\rexiting\n")
+			fcgi.shutdown(srv)
+		} : byte#)
+	]
+	sys.sigaction(sys.Sigint, &act, &oact)
 }
 
 const main = {args
@@ -143,6 +147,8 @@ const main = {args
 	std.slfree(opts.args)
 
 	notes = [][:]
+
+	sighandler()
 
 	fcgi.serve(srv, handler)
 
