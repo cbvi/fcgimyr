@@ -6,7 +6,7 @@ use "types"
 
 pkg fcgi =
 	const announce		: (ds : byte[:] -> std.result(server#, error))
-	const respond		: (req : request#, data : byte[:] -> std.result(bool, error))
+	const respond		: (req : request#, data : byte[:] -> std.result(void, error))
 	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
 	const shutdown		: (srv : server# -> void)
 ;;
@@ -113,7 +113,7 @@ const respond = {req, data
 	endrequestdata(buf[:], 0, fcgi.RequestComplete)
 	sendrecord(req, buf[:], fcgi.EndRequest)
 
-	-> `std.Ok true
+	-> `std.Ok void
 
 :short
 	-> `std.Err `Eshort
