@@ -3,7 +3,7 @@ use std
 use "types"
 
 pkg fcgi =
-	pkglocal const parseparams	: (req : request#, buf : byte[:] -> void)
+	pkglocal const parseparams	: (buf : byte[:] -> (byte[:], byte[:])[:])
 ;;
 
 const getval = {buf, keylen, vallen
@@ -56,8 +56,11 @@ const getlen = {buf
 	-> `std.None
 }
 
-const parseparams = {req, buf
+const parseparams = {buf
+	var params
 	var keylen, vallen
+
+	params = [][:]
 
 	while true
 		match getlen(buf)
@@ -69,10 +72,11 @@ const parseparams = {req, buf
 
 		match getval(buf, keylen, vallen)
 		| `std.Some (kv, b):
-			std.slpush(&req.params, kv)
+			std.slpush(&params, kv)
 			buf = b
 		| `std.None: break
 		;;
 	;;
 
+	-> params
 }

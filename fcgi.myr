@@ -177,7 +177,7 @@ const readrequest = {req
 	req.paramb = std.sbfin(params)
 	req.stdin = std.sbfin(stdin)
 
-	parseparams(req, req.paramb)
+	req.params = parseparams(req.paramb)
 
 	-> `std.Ok void
 
