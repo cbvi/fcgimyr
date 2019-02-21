@@ -137,7 +137,7 @@ const respond = {req, data
 const readrequest = {req
 	var err
 	var content : byte[65535+255]
-	var params, stdin
+	var buf, params, stdin
 
 	params = std.mksb()
 	stdin = std.mksb()
@@ -158,16 +158,20 @@ const readrequest = {req
 			goto err
 		;;
 
+		buf = content[:conlen]
+
 		match what
 		| BeginRequest:
 			req.id = id
 		| Params:
-			std.sbputs(params, content[:conlen])
+			std.sbputs(params, buf)
 		| Stdin:
 			if conlen == 0
 				break
 			;;
-			std.sbputs(stdin, content[:conlen])
+			std.sbputs(stdin, buf)
+		| GetValues:
+			getvalues(buf)
 		| _:
 			err = `Etype what
 			goto err
@@ -185,6 +189,29 @@ const readrequest = {req
 	std.sbfree(params)
 	std.sbfree(stdin)
 	-> `std.Err err
+}
+
+const getvalues = {buf
+	var values, sb
+	var res
+
+	const maxconns	= "\x0E\0x01FCGI_MAX_CONNS1"
+	const maxreqs	= "\x0D\0x01FCGI_MAX_REQS1"
+	const mpxsconns	= "\x0F\0x01FCGI_MPSX_CONNS1"
+
+	values = parseparams(buf)
+	sb = std.mksb()
+
+	for value : values
+		match value
+		| ("FCGI_MAX_CONNS", _):	std.sbputs(sb, maxconns)
+		| ("FCGI_MAX_REQS", _):		std.sbputs(sb, maxreqs)
+		| ("FCGI_MPXS_CONNS", _):	std.sbputs(sb, mpxsconns)
+		| _:
+		;;
+	;;
+
+	res = std.sbfin(sb)
 }
 
 const reqfree = {req
