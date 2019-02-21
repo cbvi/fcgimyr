@@ -156,7 +156,7 @@ const readrequest = {req
 			;;
 			std.sbputs(stdin, buf)
 		| GetValues:
-			getvalues(buf)
+			getvalues(req, buf)
 		| _:
 			err = `Etype what
 			goto err
@@ -176,16 +176,19 @@ const readrequest = {req
 	-> `std.Err err
 }
 
-const getvalues = {buf
+const getvalues = {req, buf
 	var values, sb
-	var res
+	var res : byte[64]
 
-	const maxconns	= "\x0E\0x01FCGI_MAX_CONNS1"
-	const maxreqs	= "\x0D\0x01FCGI_MAX_REQS1"
-	const mpxsconns	= "\x0F\0x01FCGI_MPSX_CONNS1"
+	const maxconns	= "\x0E\x01FCGI_MAX_CONNS1"
+	const maxreqs	= "\x0D\x01FCGI_MAX_REQS1"
+	const mpxsconns	= "\x0F\x01FCGI_MPXS_CONNS0"
+
+	std.assert(res.len >= maxconns.len + maxreqs.len + mpxsconns.len,
+		"getvalues buffer too small to hold all values")
 
 	values = parseparams(buf)
-	sb = std.mksb()
+	sb = std.mkbufsb(res[:])
 
 	for value : values
 		match value
@@ -196,9 +199,7 @@ const getvalues = {buf
 		;;
 	;;
 
-	res = std.sbfin(sb)
-
-	std.slfree(res)
+	sendrecord(req, std.sbfin(sb), fcgi.GetValuesResult)
 }
 
 const reqfree = {req

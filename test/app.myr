@@ -8,6 +8,7 @@ const EndRequest = 3
 const Params = 4
 const Stdin = 5
 const Stdout = 6
+const GetValues = 9
 
 const restext = "Content-Type: text/html\r\n\r\ntest"
 
@@ -244,6 +245,81 @@ const stdin_test = {ctx
 	std.close(sock)
 }
 
+const getvalues_test = {ctx
+	var sock = std.try(std.dial(sockpath))
+
+	var hdr : byte[8]
+	var buf
+	var version, what, id, conlen, padlen
+	var values
+	const wantvalues = "\x0E\x00FCGI_MAX_CONNS" \
+		"\x0D\x00FCGI_MAX_REQS" \
+		"\x0F\x00FCGI_MPXS_CONNS"
+
+	header(hdr[:], BeginRequest, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], Params, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	header(hdr[:], GetValues, wantvalues.len, 0)
+	std.try(std.write(sock, hdr[:]))
+	std.try(std.write(sock, wantvalues))
+	std.try(std.read(sock, hdr[:]))
+
+	conlen = std.getbe16(hdr[4:6])
+	padlen = hdr[6]
+
+	values = std.slalloc((conlen + padlen : std.size))
+	std.try(std.read(sock, values))
+
+	testr.check(ctx, std.sleq(values[2:17], "FCGI_MAX_CONNS1"),
+		"getvalues maxconns response not correct {}", values[2:17])
+	testr.check(ctx, std.sleq(values[19:33], "FCGI_MAX_REQS1"),
+		"getvalues maxreqs response not correct {}", values[19:33])
+	testr.check(ctx, std.sleq(values[35:51], "FCGI_MPXS_CONNS0"),
+		"getvalues mpxsconns response not correct {}", values[35:51])
+
+	header(hdr[:], Stdin, 0, 0)
+	std.try(std.write(sock, hdr[:]))
+
+	std.try(std.read(sock, hdr[:]))
+
+	version = hdr[0]
+	what = hdr[1]
+	id = std.getbe16(hdr[2:4])
+	conlen = std.getbe16(hdr[4:6])
+	padlen = hdr[6]
+
+	testr.check(ctx, version == 1, "wrong version {}", version)
+	testr.check(ctx, what == Stdout, "wrong type {}", what)
+	testr.check(ctx, id == 1, "wrong id {}", id)
+	testr.check(ctx, conlen == restext.len, "wrong conlen {}", conlen)
+	testr.check(ctx, padlen == 0, "wrong padlen {}", padlen)
+
+	buf = std.slalloc((conlen + padlen : std.size))
+
+	std.try(std.read(sock, buf))
+
+	match buf
+	| restext: testr.ok(ctx)
+	| v: testr.fail(ctx, "wrong content \"{}\"", v)
+	;;
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[1] == Stdout, "wrong type for final stdout {}", hdr[1])
+	testr.check(ctx, std.getbe16(hdr[4:6]) == 0, "final stdout has content")
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[1] == EndRequest, "wrong type for end {}", hdr[1])
+
+	std.try(std.read(sock, hdr[:]))
+	testr.check(ctx, hdr[4] == 0, "wrong protocol status {}", hdr[4])
+
+	std.slfree(buf)
+	std.close(sock)
+}
+
 const stopsrv = {
 	var sock = std.try(std.dial(sockpath))
 	var hdr : byte[8]
@@ -288,6 +364,9 @@ const tests = {
 		}],
 		[.name="stdin", .fn={ctx
 			stdin_test(ctx)
+		}],
+		[.name="getvalues", .fn={ctx
+			getvalues_test(ctx)
 		}],
 	][:])
 }
