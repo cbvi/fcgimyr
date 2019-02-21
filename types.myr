@@ -22,6 +22,8 @@ pkg fcgi =
 	pkglocal const Overloaded		: protocolstatus = 2
 	pkglocal const UnknownRole		: protocolstatus = 3
 
+	pkglocal const Empty = ""
+
 	pkglocal type error = union
 		`Eversion byte
 		`Eshort

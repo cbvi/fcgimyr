@@ -67,12 +67,12 @@ const endrequestdata = {buf, appstatus, protocolstatus
 	buf[5] = buf[6] = buf[7] = 0		/* reserved */
 }
 
-const sendrecord = {fd, content, what, id
+const sendrecord = {req, content, what
 	var header : byte[fcgi.Headerlen]
 
-	prepareheader(header[:], what, id, content.len)
+	prepareheader(header[:], what, req.id, content.len)
 
-	match std.writeall(fd, header[:])
+	match std.writeall(req.fd, header[:])
 	| `std.Ok sz:
 		if sz < header.len
 			goto short
@@ -80,7 +80,7 @@ const sendrecord = {fd, content, what, id
 	| `std.Err e: goto short
 	;;
 
-	match std.writeall(fd, content)
+	match std.writeall(req.fd, content)
 	| `std.Ok sz:
 		if sz < content.len
 			goto short
@@ -102,42 +102,16 @@ const respond = {req, data
 	while data.len > 0
 		len = data.len > max ? max : data.len
 
-		sendrecord(req.fd, data[:len], fcgi.Stdout, req.id)
+		sendrecord(req, data[:len], fcgi.Stdout)
 
 		data = data[len:]
 	;;
 
 	/* empty stdout record */
-	prepareheader(buf[:], fcgi.Stdout, req.id, 0)
-
-	match std.writeall(req.fd, buf[:])
-	| `std.Ok sz:
-		if sz < buf.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
-
-	prepareheader(buf[:], fcgi.EndRequest, req.id,
-			fcgi.Headerlen)
-
-	match std.writeall(req.fd, buf[:])
-	| `std.Ok sz:
-		if sz < buf.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
+	sendrecord(req, fcgi.Empty, fcgi.Stdout)
 
 	endrequestdata(buf[:], 0, fcgi.RequestComplete)
-
-	match std.writeall(req.fd, buf[:])
-	| `std.Ok sz:
-		if sz < buf.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
+	sendrecord(req, buf[:], fcgi.EndRequest)
 
 	-> `std.Ok true
 
