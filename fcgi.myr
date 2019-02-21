@@ -1,4 +1,5 @@
 use std
+use thread
 
 use "params"
 use "types"
@@ -198,19 +199,14 @@ const shutdown = {srv
 	std.aclose(srv.ann)
 }
 
-const serve_cb = {srv, fn
+const serve_cb = {fd, fn
 	var req : request
 
 	req.id = 0
 	req.params = [][:]
 	req.paramb = [][:]
-	req.fd = -1
+	req.fd = fd
 	req.stdin = [][:]
-
-	match std.accept(srv.ann)
-	| `std.Ok a: req.fd = a
-	| `std.Err e: goto end
-	;;
 
 	match readrequest(&req)
 	| `std.Ok _:
@@ -225,7 +221,11 @@ const serve_cb = {srv, fn
 
 const serve = {srv, fn
 	while srv.running
-		serve_cb(srv, fn)
+		match std.accept(srv.ann)
+		| `std.Ok fd:
+			serve_cb(fd, fn)
+		| `std.Err _:
+		;;
 	;;
 
 	std.free(srv)
