@@ -9,6 +9,7 @@ const Params = 4
 const Stdin = 5
 const Stdout = 6
 const GetValues = 9
+const GetValuesResponse = 10
 
 const restext = "Content-Type: text/html\r\n\r\ntest"
 
@@ -252,7 +253,8 @@ const getvalues_test = {ctx
 	var buf
 	var version, what, id, conlen, padlen
 	var values
-	const wantvalues = "\x0E\x00FCGI_MAX_CONNS" \
+	const wantvalues = \
+		"\x0E\x00FCGI_MAX_CONNS" \
 		"\x0D\x00FCGI_MAX_REQS" \
 		"\x0F\x00FCGI_MPXS_CONNS"
 
@@ -267,12 +269,15 @@ const getvalues_test = {ctx
 	std.try(std.write(sock, wantvalues))
 	std.try(std.read(sock, hdr[:]))
 
+	what = hdr[1]
 	conlen = std.getbe16(hdr[4:6])
 	padlen = hdr[6]
 
 	values = std.slalloc((conlen + padlen : std.size))
 	std.try(std.read(sock, values))
 
+	testr.check(ctx, what == GetValuesResponse,
+		"type should be getvaluesresponse {}", what)
 	testr.check(ctx, std.sleq(values[2:17], "FCGI_MAX_CONNS1"),
 		"getvalues maxconns response not correct {}", values[2:17])
 	testr.check(ctx, std.sleq(values[19:33], "FCGI_MAX_REQS1"),
