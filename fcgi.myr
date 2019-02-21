@@ -212,6 +212,8 @@ const getvalues = {buf
 	;;
 
 	res = std.sbfin(sb)
+
+	std.slfree(res)
 }
 
 const reqfree = {req
