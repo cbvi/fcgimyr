@@ -52,18 +52,10 @@ const readheader = {fd, content
 	-> `std.Err `Eshort
 }
 
-const prepareheader = {buf, what, id, conlen
-	utilfcgi.prepareheader(buf, (what : byte), id, conlen)
-}
-
-const endrequestdata = {buf, appstatus, protocolstatus
-	utilfcgi.endrequestdata(buf, appstatus, (protocolstatus : byte))
-}
-
 const sendrecord = {req, content, what
 	var header : byte[utilfcgi.Headerlen]
 
-	prepareheader(header[:], what, req.id, content.len)
+	utilfcgi.prepareheader(header[:], what, req.id, content.len)
 
 	-> utilfcgi.sendrecord(req.fd, header[:], content)
 }
@@ -88,7 +80,7 @@ const respond = {req, data
 		goto short
 	;;
 
-	endrequestdata(buf[:], 0, utilfcgi.RequestComplete)
+	utilfcgi.endrequestdata(buf[:], 0, utilfcgi.RequestComplete)
 
 	if !sendrecord(req, buf[:], utilfcgi.EndRequest)
 		goto short

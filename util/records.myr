@@ -3,13 +3,13 @@ use std
 use "defines"
 
 pkg utilfcgi =
-	const prepareheader : (hdr : byte[:], what : byte, id : uint16, conlen : uint16 -> void)
-	const endrequestdata : (buf : byte[:], appstatus : uint32, protocolstatus : byte -> void)
+	const prepareheader : (hdr : byte[:], what : rtype, id : uint16, conlen : uint16 -> void)
+	const endrequestdata : (buf : byte[:], appstatus : uint32, protocolstatus : protocolstatus -> void)
 ;;
 
 const prepareheader = {hdr, what, id, conlen
 	hdr[0] = Version	/* version */
-	hdr[1] = what
+	hdr[1] = (what : byte)
 	std.putbe16(hdr[2:], id)
 	std.putbe16(hdr[4:], conlen)
 	hdr[6] = 0		/* padding length */
@@ -18,6 +18,6 @@ const prepareheader = {hdr, what, id, conlen
 
 const endrequestdata = {buf, appstatus, protocolstatus
 	std.putbe32(buf[:4], appstatus)
-	buf[4] = protocolstatus
+	buf[4] = (protocolstatus : byte)
 	buf[5] = buf[6] = buf[7] = 0	/* reserved */
 }
