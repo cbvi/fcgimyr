@@ -1,14 +1,14 @@
 use std
 
+use "defines"
+
 pkg utilfcgi =
 	const prepareheader : (hdr : byte[:], what : byte, id : uint16, conlen : uint16 -> void)
 	const endrequestdata : (buf : byte[:], appstatus : uint32, protocolstatus : byte -> void)
 ;;
 
-const version = 1
-
 const prepareheader = {hdr, what, id, conlen
-	hdr[0] = version	/* version */
+	hdr[0] = Version	/* version */
 	hdr[1] = what
 	std.putbe16(hdr[2:], id)
 	std.putbe16(hdr[4:], conlen)

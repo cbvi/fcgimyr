@@ -1,0 +1,27 @@
+use std
+
+pkg utilfcgi =
+	type rtype			= byte
+	type protocolstatus		= byte
+
+	const Empty			= ""
+
+	const Headerlen 		: std.size = 8
+	const Version 			: byte = 1
+
+	const BeginRequest		: rtype = 1
+	const EndRequest		: rtype = 3
+	const Params			: rtype = 4
+	const Stdin			: rtype = 5
+	const Stdout			: rtype = 6
+	const Data			: rtype = 8
+	const GetValues			: rtype = 9
+	const GetValuesResult		: rtype = 10
+	const UnknownType		: rtype = 11
+	const MaxType			: rtype = UnknownType
+
+	const RequestComplete		: protocolstatus = 0
+	const CantMpxConn		: protocolstatus = 1
+	const Overloaded		: protocolstatus = 2
+	const UnknownRole		: protocolstatus = 3
+;;

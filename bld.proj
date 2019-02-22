@@ -5,6 +5,7 @@ lib fcgi =
 ;;
 
 lib utilfcgi =
+	defines.myr
 	util/io.myr
 	util/params.myr
 	util/records.myr

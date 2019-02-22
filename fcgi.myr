@@ -12,7 +12,7 @@ pkg fcgi =
 ;;
 
 const readheader = {fd, content
-	var buf : byte[fcgi.Headerlen]
+	var buf : byte[utilfcgi.Headerlen]
 	var what, version, id, conlen, padlen
 
 	match std.readall(fd, buf[:])
@@ -23,11 +23,11 @@ const readheader = {fd, content
 
 		version		= buf[0]
 
-		if version != fcgi.Version
+		if version != utilfcgi.Version
 			goto version
 		;;
 
-		what		= (buf[1] : rtype)
+		what		= (buf[1] : utilfcgi.rtype)
 		id		= std.getbe16(buf[2:4])
 		conlen		= std.getbe16(buf[4:6])
 		padlen		= std.getbe8(buf[6:])
@@ -61,7 +61,7 @@ const endrequestdata = {buf, appstatus, protocolstatus
 }
 
 const sendrecord = {req, content, what
-	var header : byte[fcgi.Headerlen]
+	var header : byte[utilfcgi.Headerlen]
 
 	prepareheader(header[:], what, req.id, content.len)
 
@@ -69,14 +69,14 @@ const sendrecord = {req, content, what
 }
 
 const respond = {req, data
-	var buf : byte[fcgi.Headerlen]
+	var buf : byte[utilfcgi.Headerlen]
 	var len
 	const max = 65535
 
 	while data.len > 0
 		len = data.len > max ? max : data.len
 
-		if !sendrecord(req, data[:len], fcgi.Stdout)
+		if !sendrecord(req, data[:len], utilfcgi.Stdout)
 			goto short
 		;;
 
@@ -84,13 +84,13 @@ const respond = {req, data
 	;;
 
 	/* empty stdout record */
-	if !sendrecord(req, fcgi.Empty, fcgi.Stdout)
+	if !sendrecord(req, utilfcgi.Empty, utilfcgi.Stdout)
 		goto short
 	;;
 
-	endrequestdata(buf[:], 0, fcgi.RequestComplete)
+	endrequestdata(buf[:], 0, utilfcgi.RequestComplete)
 
-	if !sendrecord(req, buf[:], fcgi.EndRequest)
+	if !sendrecord(req, buf[:], utilfcgi.EndRequest)
 		goto short
 	;;
 
@@ -127,16 +127,16 @@ const readrequest = {req
 		buf = content[:conlen]
 
 		match what
-		| BeginRequest:
+		| utilfcgi.BeginRequest:
 			req.id = id
-		| Params:
+		| utilfcgi.Params:
 			std.sbputs(params, buf)
-		| Stdin:
+		| utilfcgi.Stdin:
 			if conlen == 0
 				break
 			;;
 			std.sbputs(stdin, buf)
-		| GetValues:
+		| utilfcgi.GetValues:
 			getvalues(req, buf)
 		| _:
 			err = `Etype what
@@ -180,7 +180,7 @@ const getvalues = {req, buf
 		;;
 	;;
 
-	-> sendrecord(req, std.sbfin(sb), fcgi.GetValuesResult)
+	-> sendrecord(req, std.sbfin(sb), utilfcgi.GetValuesResult)
 }
 
 const reqfree = {req
