@@ -5,8 +5,9 @@ lib fcgi =
 ;;
 
 lib utilfcgi =
-	util/params.myr
 	util/io.myr
+	util/params.myr
+	util/records.myr
 ;;
 
 bin myrcgi {noinst} =

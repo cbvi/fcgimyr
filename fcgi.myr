@@ -53,18 +53,11 @@ const readheader = {fd, content
 }
 
 const prepareheader = {buf, what, id, conlen
-	buf[0] = fcgi.Version
-	std.putbe8(buf[1:], what)
-	std.putbe16(buf[2:], id)
-	std.putbe16(buf[4:], conlen)
-	buf[6] = 0	/* padding length */
-	buf[7] = 0	/* reserved space */
+	utilfcgi.prepareheader(buf, (what : byte), id, conlen)
 }
 
 const endrequestdata = {buf, appstatus, protocolstatus
-	std.putbe32(buf[:4], 0)			/* appStatus */
-	buf[4] = (protocolstatus : byte)	/* protocolStatus */
-	buf[5] = buf[6] = buf[7] = 0		/* reserved */
+	utilfcgi.endrequestdata(buf, appstatus, (protocolstatus : byte))
 }
 
 const sendrecord = {req, content, what

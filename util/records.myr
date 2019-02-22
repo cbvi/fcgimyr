@@ -1,0 +1,23 @@
+use std
+
+pkg utilfcgi =
+	const prepareheader : (hdr : byte[:], what : byte, id : uint16, conlen : uint16 -> void)
+	const endrequestdata : (buf : byte[:], appstatus : uint32, protocolstatus : byte -> void)
+;;
+
+const version = 1
+
+const prepareheader = {hdr, what, id, conlen
+	hdr[0] = version	/* version */
+	hdr[1] = what
+	std.putbe16(hdr[2:], id)
+	std.putbe16(hdr[4:], conlen)
+	hdr[6] = 0		/* padding length */
+	hdr[7] = 0		/* reserved */
+}
+
+const endrequestdata = {buf, appstatus, protocolstatus
+	std.putbe32(buf[:4], appstatus)
+	buf[4] = protocolstatus
+	buf[5] = buf[6] = buf[7] = 0	/* reserved */
+}
