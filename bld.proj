@@ -4,17 +4,12 @@ lib fcgi =
 	types.myr
 ;;
 
-bin myrcgi =
+bin myrcgi {noinst} =
 	lib fcgi
 	main.myr
 ;;
 
-bin notes =
+bin notes {noinst} =
 	lib fcgi
 	example/notes.myr
-;;
-
-test app =
-	test/app.myr
-	lib fcgi
 ;;

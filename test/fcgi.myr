@@ -52,6 +52,9 @@ const cb = {req
 const main = {
 	wg = thread.mkwg(1)
 	srv = std.try(fcgi.announce(sockpath))
+	var thing
+
+	thing = &fcgi.parseparams
 
 	thread.spawn({
 		fcgi.serve(srv, cb)
