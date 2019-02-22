@@ -11,33 +11,25 @@ pkg fcgi =
 	const shutdown		: (srv : server# -> void)
 ;;
 
-const readheader = {fd, content
+const readrecord = {fd, content
 	var buf : byte[utilfcgi.Headerlen]
-	var what, version, id, conlen, padlen
+	var version, what, id, conlen, padlen
+	var len
 
-	match std.readall(fd, buf[:])
-	| `std.Ok sz:
-		if sz < buf.len
-			goto short
-		;;
-
-		version		= buf[0]
-
-		if version != utilfcgi.Version
-			goto version
-		;;
-
-		what		= (buf[1] : utilfcgi.rtype)
-		id		= std.getbe16(buf[2:4])
-		conlen		= std.getbe16(buf[4:6])
-		padlen		= std.getbe8(buf[6:])
-		/* buf[7] is reserved space */
-	| `std.Err e: goto short
+	match utilfcgi.readheader(fd)
+	| `std.Some s: (version, what, id, conlen, padlen) = s
+	| `std.None: goto short
 	;;
 
-	match std.readall(fd, content[:conlen + padlen])
+	if version != utilfcgi.Version
+		goto version
+	;;
+
+	len = conlen + padlen
+
+	match std.readall(fd, content[:len])
 	| `std.Ok sz:
-		if sz < conlen + padlen
+		if sz < len
 			goto short
 		;;
 	| `std.Err e: goto short
@@ -103,7 +95,7 @@ const readrequest = {req
 	while true
 		var id, what, conlen
 
-		match readheader(req.fd, content[:])
+		match readrecord(req.fd, content[:])
 		| `std.Ok res:
 			(id, what, conlen) = res
 		| `std.Err e:

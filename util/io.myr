@@ -1,7 +1,10 @@
 use std
 
+use "defines"
+
 pkg utilfcgi =
 	const sendrecord	: (fd : std.fd, header : byte[:], content : byte[:] -> bool)
+	const readheader	: (fd : std.fd -> std.option((byte, rtype, uint16, std.size, std.size)))
 ;;
 
 const sendrecord = {fd, header, content
@@ -25,4 +28,29 @@ const sendrecord = {fd, header, content
 
 :err
 	-> false
+}
+
+const readheader = {fd
+	var buf : byte[Headerlen]
+	var version, what, id, conlen, padlen
+
+	match std.readall(fd, buf[:])
+	| `std.Ok sz:
+		if sz < buf.len
+			goto err
+		;;
+	| `std.Err _: goto err
+	;;
+
+	version		= buf[0]
+	what		= (buf[1] : rtype)
+	id		= std.getbe16(buf[2:4])
+	conlen		= (std.getbe16(buf[4:6]) : std.size)
+	padlen		= (buf[6] : std.size)
+	/* reserved	= buf[7] */
+
+	-> `std.Some (version, what, id, conlen, padlen)
+
+:err
+	-> `std.None
 }
