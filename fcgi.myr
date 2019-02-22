@@ -72,26 +72,7 @@ const sendrecord = {req, content, what
 
 	prepareheader(header[:], what, req.id, content.len)
 
-	match std.writeall(req.fd, header[:])
-	| `std.Ok sz:
-		if sz < header.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
-
-	match std.writeall(req.fd, content)
-	| `std.Ok sz:
-		if sz < content.len
-			goto short
-		;;
-	| `std.Err e: goto short
-	;;
-
-	-> `std.Ok void
-
-:short
-	-> `std.Err `Eshort
+	-> utilfcgi.sendrecord(req.fd, header[:], content)
 }
 
 const respond = {req, data
@@ -102,16 +83,23 @@ const respond = {req, data
 	while data.len > 0
 		len = data.len > max ? max : data.len
 
-		sendrecord(req, data[:len], fcgi.Stdout)
+		if !sendrecord(req, data[:len], fcgi.Stdout)
+			goto short
+		;;
 
 		data = data[len:]
 	;;
 
 	/* empty stdout record */
-	sendrecord(req, fcgi.Empty, fcgi.Stdout)
+	if !sendrecord(req, fcgi.Empty, fcgi.Stdout)
+		goto short
+	;;
 
 	endrequestdata(buf[:], 0, fcgi.RequestComplete)
-	sendrecord(req, buf[:], fcgi.EndRequest)
+
+	if !sendrecord(req, buf[:], fcgi.EndRequest)
+		goto short
+	;;
 
 	-> `std.Ok void
 
@@ -199,7 +187,7 @@ const getvalues = {req, buf
 		;;
 	;;
 
-	sendrecord(req, std.sbfin(sb), fcgi.GetValuesResult)
+	-> sendrecord(req, std.sbfin(sb), fcgi.GetValuesResult)
 }
 
 const reqfree = {req

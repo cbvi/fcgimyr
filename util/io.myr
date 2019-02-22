@@ -1,0 +1,28 @@
+use std
+
+pkg utilfcgi =
+	const sendrecord	: (fd : std.fd, header : byte[:], content : byte[:] -> bool)
+;;
+
+const sendrecord = {fd, header, content
+	match std.writeall(fd, header)
+	| `std.Ok sz:
+		if sz < header.len
+			goto err
+		;;
+	| `std.Err _: goto err
+	;;
+
+	match std.writeall(fd, content)
+	| `std.Ok sz:
+		if sz < content.len
+			goto err
+		;;
+	| `std.Err _: goto err
+	;;
+
+	-> true
+
+:err
+	-> false
+}
