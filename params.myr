@@ -1,7 +1,5 @@
 use std
 
-use "types"
-
 pkg fcgi =
 	pkglocal const parseparams	: (buf : byte[:] -> (byte[:], byte[:])[:])
 ;;
