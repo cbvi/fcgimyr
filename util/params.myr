@@ -2,6 +2,7 @@ use std
 
 pkg utilfcgi =
 	const parseparams	: (buf : byte[:] -> (byte[:], byte[:])[:])
+	const encodeparams	: (pairs : (byte[:], byte[:])[:] -> byte[:])
 ;;
 
 const getval = {buf, keylen, vallen
@@ -77,4 +78,31 @@ const parseparams = {buf
 	;;
 
 	-> params
+}
+
+const encodeparams = {pairs
+	var sb
+
+	sb = std.mksb()
+
+	for (k, v) : pairs
+		if k.len < 127
+			std.sbputb(sb, k.len)
+		else
+			// XXX
+			std.die("not implemented")
+		;;
+
+		if v.len < 127
+			std.sbputb(sb, v.len)
+		else
+			// XXX
+			std.die("not implemented")
+		;;
+
+		std.sbputs(sb, k)
+		std.sbputs(sb, v)
+	;;
+
+	-> std.sbfin(sb)
 }
