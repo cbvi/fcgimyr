@@ -1,7 +1,7 @@
 use std
 use thread
+use utilfcgi
 
-use "params"
 use "types"
 
 pkg fcgi =
@@ -166,7 +166,7 @@ const readrequest = {req
 	req.paramb = std.sbfin(params)
 	req.stdin = std.sbfin(stdin)
 
-	req.params = parseparams(req.paramb)
+	req.params = utilfcgi.parseparams(req.paramb)
 
 	-> `std.Ok void
 
@@ -187,7 +187,7 @@ const getvalues = {req, buf
 	std.assert(res.len >= maxconns.len + maxreqs.len + mpxsconns.len,
 		"getvalues buffer too small to hold all values")
 
-	values = parseparams(buf)
+	values = utilfcgi.parseparams(buf)
 	sb = std.mkbufsb(res[:])
 
 	for value : values

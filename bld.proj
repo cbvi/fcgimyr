@@ -1,7 +1,11 @@
 lib fcgi =
 	fcgi.myr
-	params.myr
 	types.myr
+	lib utilfcgi
+;;
+
+lib utilfcgi =
+	utilfcgi.myr
 ;;
 
 bin myrcgi {noinst} =

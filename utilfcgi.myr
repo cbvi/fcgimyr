@@ -1,7 +1,7 @@
 use std
 
-pkg fcgi =
-	pkglocal const parseparams	: (buf : byte[:] -> (byte[:], byte[:])[:])
+pkg utilfcgi =
+	const parseparams	: (buf : byte[:] -> (byte[:], byte[:])[:])
 ;;
 
 const getval = {buf, keylen, vallen
