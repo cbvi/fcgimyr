@@ -142,29 +142,27 @@ const readrequest = {req
 }
 
 const getvalues = {req, buf
-	var values, sb
-	var res : byte[64]
+	var have : (byte[:], byte[:])[3]
+	var want, encoded, ret
+	var i = 0
 
-	const maxconns	= "\x0E\x01FCGI_MAX_CONNS1"
-	const maxreqs	= "\x0D\x01FCGI_MAX_REQS1"
-	const mpxsconns	= "\x0F\x01FCGI_MPXS_CONNS0"
+	want = utilfcgi.parseparams(buf)
 
-	std.assert(res.len >= maxconns.len + maxreqs.len + mpxsconns.len,
-		"getvalues buffer too small to hold all values")
-
-	values = utilfcgi.parseparams(buf)
-	sb = std.mkbufsb(res[:])
-
-	for value : values
-		match value
-		| ("FCGI_MAX_CONNS", _):	std.sbputs(sb, maxconns)
-		| ("FCGI_MAX_REQS", _):		std.sbputs(sb, maxreqs)
-		| ("FCGI_MPXS_CONNS", _):	std.sbputs(sb, mpxsconns)
-		| _:
+	for (hk, hv) : fcgi.Values
+		for (wk, _) : want
+			if std.sleq(hk, wk)
+				have[i++] = (hk, hv)
+			;;
 		;;
 	;;
 
-	-> sendrecord(req, std.sbfin(sb), utilfcgi.GetValuesResult)
+	encoded = utilfcgi.encodeparams(have[:i])
+
+	ret = sendrecord(req, encoded, utilfcgi.GetValuesResult)
+
+	std.slfree(encoded)
+
+	-> ret
 }
 
 const reqfree = {req

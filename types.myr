@@ -22,4 +22,10 @@ pkg fcgi =
 		paramb	: byte[:]
 		stdin	: byte[:]
 	;;
+
+	pkglocal const Values = [
+		("FCGI_MAX_CONNS", "1"),
+		("FCGI_MAX_REQS", "1"),
+		("FCGI_MPXS_CONNS", "0")
+	]
 ;;
