@@ -11,8 +11,11 @@ pkg utilfcgi =
 
 const sendrecord = {fd, what, id, content
 	var header : byte[Headerlen]
+	var len
 
-	prepareheader(header[:], what, id, content.len)
+	len = content.len > Contentmax ? Contentmax : content.len
+
+	prepareheader(header[:], what, id, (len : uint16))
 
 	match std.writeall(fd, header[:])
 	| `std.Ok sz:
@@ -22,12 +25,15 @@ const sendrecord = {fd, what, id, content
 	| `std.Err _: goto err
 	;;
 
-	match std.writeall(fd, content)
-	| `std.Ok sz:
-		if sz < content.len
+	match std.writeall(fd, content[:len])
+	| `std.Ok sz: content = content[sz:]
+	| `std.Err _: goto err
+	;;
+
+	if content.len > 0
+		if !sendrecord(fd, what, id, content)
 			goto err
 		;;
-	| `std.Err _: goto err
 	;;
 
 	-> true

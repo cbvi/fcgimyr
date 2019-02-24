@@ -13,17 +13,9 @@ pkg fcgi =
 
 const respond = {req, data
 	var buf : byte[utilfcgi.Headerlen]
-	var len
-	const max = 65535
 
-	while data.len > 0
-		len = data.len > max ? max : data.len
-
-		if !utilfcgi.sendrecord(req.fd, utilfcgi.Stdout, req.id, data[:len])
-			goto short
-		;;
-
-		data = data[len:]
+	if !utilfcgi.sendrecord(req.fd, utilfcgi.Stdout, req.id, data)
+		goto short
 	;;
 
 	/* empty stdout record */
