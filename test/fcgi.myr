@@ -79,34 +79,28 @@ const header = {buf, rtype, conlen, padlen
 const basic_test = {ctx
 	var sock = std.try(std.dial(sockpath))
 
-	var hdr : byte[8]
+	var hdr : byte[utilfcgi.Headerlen]
 	var buf
 	var version, what, id, conlen, padlen
 
-	header(hdr[:], BeginRequest, 0, 0)
-	std.try(std.write(sock, hdr[:]))
+	utilfcgi.prepareheader(hdr[:], utilfcgi.BeginRequest, 1, 0)
+	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
 
-	header(hdr[:], Params, 0, 0)
-	std.try(std.write(sock, hdr[:]))
+	utilfcgi.prepareheader(hdr[:], utilfcgi.Params, 1, 0)
+	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
 
-	header(hdr[:], Stdin, 0, 0)
-	std.try(std.write(sock, hdr[:]))
+	utilfcgi.prepareheader(hdr[:], utilfcgi.Stdin, 1, 0)
+	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
 
-	std.try(std.read(sock, hdr[:]))
-
-	version = hdr[0]
-	what = hdr[1]
-	id = std.getbe16(hdr[2:4])
-	conlen = std.getbe16(hdr[4:6])
-	padlen = hdr[6]
+	(version, what, id, conlen, padlen) = std.get(utilfcgi.readheader(sock))
 
 	testr.check(ctx, version == 1, "wrong version {}", version)
-	testr.check(ctx, what == Stdout, "wrong type {}", what)
+	testr.check(ctx, what == utilfcgi.Stdout, "wrong type {}", what)
 	testr.check(ctx, id == 1, "wrong id {}", id)
 	testr.check(ctx, conlen == restext.len, "wrong conlen {}", conlen)
 	testr.check(ctx, padlen == 0, "wrong padlen {}", padlen)
 
-	buf = std.slalloc((conlen + padlen : std.size))
+	buf = std.slalloc(conlen + padlen)
 
 	std.try(std.read(sock, buf))
 
