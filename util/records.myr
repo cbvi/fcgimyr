@@ -6,7 +6,7 @@ use "io"
 pkg utilfcgi =
 	const prepareheader	: (hdr : byte[:], what : rtype, id : uint16, conlen : uint16 -> void)
 	const endrequestdata	: (buf : byte[:], appstatus : uint32, protocolstatus : protocolstatus -> void)
-	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((uint16, rtype, std.size)))
+	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((byte, rtype, uint16, std.size)))
 ;;
 
 const prepareheader = {hdr, what, id, conlen
@@ -44,7 +44,7 @@ const readrecord = {fd, content
 	| `std.Err _: goto err
 	;;
 
-	-> `std.Some (id, what, conlen)
+	-> `std.Some (version, what, id, conlen)
 
 :err
 	-> `std.None

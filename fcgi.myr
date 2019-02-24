@@ -60,13 +60,18 @@ const readrequest = {req
 	stdin = std.mksb()
 
 	while true
-		var id, what, conlen
+		var version, what, id, conlen
 
 		match utilfcgi.readrecord(req.fd, content[:])
 		| `std.Some res:
-			(id, what, conlen) = res
+			(version, what, id, conlen) = res
 		| `std.None:
 			err = `Econn
+			goto err
+		;;
+
+		if version != utilfcgi.Version
+			err = `Eversion version
 			goto err
 		;;
 
