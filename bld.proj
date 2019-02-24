@@ -1,14 +1,7 @@
 lib fcgi =
 	fcgi.myr
 	types.myr
-	lib utilfcgi
-;;
-
-lib utilfcgi =
-	defines.myr
-	util/io.myr
-	util/params.myr
-	util/records.myr
+	lib @/util:utilfcgi
 ;;
 
 bin myrcgi {noinst} =
@@ -19,4 +12,8 @@ bin myrcgi {noinst} =
 bin notes {noinst} =
 	lib fcgi
 	example/notes.myr
+;;
+
+sub =
+	util
 ;;
