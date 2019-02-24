@@ -1,14 +1,20 @@
 use std
 
 use "defines"
+use "records"
 
 pkg utilfcgi =
-	const sendrecord	: (fd : std.fd, header : byte[:], content : byte[:] -> bool)
+	const sendrecord	: (fd : std.fd, what : rtype, id : uint16, content : byte[:] -> bool)
+	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((byte, rtype, uint16, std.size)))
 	const readheader	: (fd : std.fd -> std.option((byte, rtype, uint16, std.size, std.size)))
 ;;
 
-const sendrecord = {fd, header, content
-	match std.writeall(fd, header)
+const sendrecord = {fd, what, id, content
+	var header : byte[Headerlen]
+
+	prepareheader(header[:], what, id, content.len)
+
+	match std.writeall(fd, header[:])
 	| `std.Ok sz:
 		if sz < header.len
 			goto err
@@ -28,6 +34,32 @@ const sendrecord = {fd, header, content
 
 :err
 	-> false
+}
+
+const readrecord = {fd, content
+	var buf : byte[Headerlen]
+	var version, what, id, conlen, padlen
+	var len
+
+	match readheader(fd)
+	| `std.Some s: (version, what, id, conlen, padlen) = s
+	| `std.None: goto err
+	;;
+
+	len = conlen + padlen
+
+	match std.readall(fd, content[:len])
+	| `std.Ok sz:
+		if sz < len
+			goto err
+		;;
+	| `std.Err _: goto err
+	;;
+
+	-> `std.Some (version, what, id, conlen)
+
+:err
+	-> `std.None
 }
 
 const readheader = {fd

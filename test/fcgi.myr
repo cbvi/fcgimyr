@@ -83,14 +83,11 @@ const basic_test = {ctx
 	var buf
 	var version, what, id, conlen, padlen
 
-	utilfcgi.prepareheader(hdr[:], utilfcgi.BeginRequest, 1, 0)
-	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
+	utilfcgi.sendrecord(sock, utilfcgi.BeginRequest, 1, utilfcgi.Empty)
 
-	utilfcgi.prepareheader(hdr[:], utilfcgi.Params, 1, 0)
-	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
+	utilfcgi.sendrecord(sock, utilfcgi.Params, 1, utilfcgi.Empty)
 
-	utilfcgi.prepareheader(hdr[:], utilfcgi.Stdin, 1, 0)
-	utilfcgi.sendrecord(sock, hdr[:], utilfcgi.Empty)
+	utilfcgi.sendrecord(sock, utilfcgi.Stdin, 1, utilfcgi.Empty)
 
 	(version, what, id, conlen, padlen) = std.get(utilfcgi.readheader(sock))
 

@@ -11,14 +11,6 @@ pkg fcgi =
 	const shutdown		: (srv : server# -> void)
 ;;
 
-const sendrecord = {req, content, what
-	var header : byte[utilfcgi.Headerlen]
-
-	utilfcgi.prepareheader(header[:], what, req.id, content.len)
-
-	-> utilfcgi.sendrecord(req.fd, header[:], content)
-}
-
 const respond = {req, data
 	var buf : byte[utilfcgi.Headerlen]
 	var len
@@ -27,7 +19,7 @@ const respond = {req, data
 	while data.len > 0
 		len = data.len > max ? max : data.len
 
-		if !sendrecord(req, data[:len], utilfcgi.Stdout)
+		if !utilfcgi.sendrecord(req.fd, utilfcgi.Stdout, req.id, data[:len])
 			goto short
 		;;
 
@@ -35,13 +27,13 @@ const respond = {req, data
 	;;
 
 	/* empty stdout record */
-	if !sendrecord(req, utilfcgi.Empty, utilfcgi.Stdout)
+	if !utilfcgi.sendrecord(req.fd, utilfcgi.Stdout, req.id, utilfcgi.Empty)
 		goto short
 	;;
 
 	utilfcgi.endrequestdata(buf[:], 0, utilfcgi.RequestComplete)
 
-	if !sendrecord(req, buf[:], utilfcgi.EndRequest)
+	if !utilfcgi.sendrecord(req.fd, utilfcgi.EndRequest, req.id, buf[:])
 		goto short
 	;;
 
@@ -130,7 +122,7 @@ const getvalues = {req, buf
 
 	encoded = utilfcgi.encodeparams(have[:i])
 
-	ret = sendrecord(req, encoded, utilfcgi.GetValuesResult)
+	ret = utilfcgi.sendrecord(req.fd, utilfcgi.GetValuesResult, req.id, encoded)
 
 	std.slfree(encoded)
 

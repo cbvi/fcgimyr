@@ -1,12 +1,10 @@
 use std
 
 use "defines"
-use "io"
 
 pkg utilfcgi =
 	const prepareheader	: (hdr : byte[:], what : rtype, id : uint16, conlen : uint16 -> void)
 	const endrequestdata	: (buf : byte[:], appstatus : uint32, protocolstatus : protocolstatus -> void)
-	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((byte, rtype, uint16, std.size)))
 ;;
 
 const prepareheader = {hdr, what, id, conlen
@@ -22,30 +20,4 @@ const endrequestdata = {buf, appstatus, protocolstatus
 	std.putbe32(buf[:4], appstatus)
 	buf[4] = (protocolstatus : byte)
 	buf[5] = buf[6] = buf[7] = 0	/* reserved */
-}
-
-const readrecord = {fd, content
-	var buf : byte[Headerlen]
-	var version, what, id, conlen, padlen
-	var len
-
-	match readheader(fd)
-	| `std.Some s: (version, what, id, conlen, padlen) = s
-	| `std.None: goto err
-	;;
-
-	len = conlen + padlen
-
-	match std.readall(fd, content[:len])
-	| `std.Ok sz:
-		if sz < len
-			goto err
-		;;
-	| `std.Err _: goto err
-	;;
-
-	-> `std.Some (version, what, id, conlen)
-
-:err
-	-> `std.None
 }
