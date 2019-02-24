@@ -80,43 +80,38 @@ const basic_test = {ctx
 	var sock = std.try(std.dial(sockpath))
 
 	var hdr : byte[utilfcgi.Headerlen]
+	var con : byte[utilfcgi.Contentmax]
 	var buf
-	var version, what, id, conlen, padlen
+	var version, what, id, conlen
 
 	utilfcgi.sendrecord(sock, utilfcgi.BeginRequest, 1, utilfcgi.Empty)
-
 	utilfcgi.sendrecord(sock, utilfcgi.Params, 1, utilfcgi.Empty)
-
 	utilfcgi.sendrecord(sock, utilfcgi.Stdin, 1, utilfcgi.Empty)
 
-	(version, what, id, conlen, padlen) = std.get(utilfcgi.readheader(sock))
+	(version, what, id, conlen) = std.get(utilfcgi.readrecord(sock, con[:]))
 
 	testr.check(ctx, version == 1, "wrong version {}", version)
 	testr.check(ctx, what == utilfcgi.Stdout, "wrong type {}", what)
 	testr.check(ctx, id == 1, "wrong id {}", id)
 	testr.check(ctx, conlen == restext.len, "wrong conlen {}", conlen)
-	testr.check(ctx, padlen == 0, "wrong padlen {}", padlen)
 
-	buf = std.slalloc(conlen + padlen)
-
-	std.try(std.read(sock, buf))
+	buf = con[:conlen]
 
 	match buf
 	| restext: testr.ok(ctx)
 	| v: testr.fail(ctx, "wrong content \"{}\"", v)
 	;;
 
-	std.try(std.read(sock, hdr[:]))
-	testr.check(ctx, hdr[1] == Stdout, "wrong type for final stdout {}", hdr[1])
-	testr.check(ctx, std.getbe16(hdr[4:6]) == 0, "final stdout has content")
+	(version, what, id, conlen) = std.get(utilfcgi.readrecord(sock, con[:]))
+	testr.check(ctx, what == utilfcgi.Stdout, "wrong type for final stdout {}", what)
+	testr.check(ctx, conlen == 0, "final stdout should not have content")
 
-	std.try(std.read(sock, hdr[:]))
-	testr.check(ctx, hdr[1] == EndRequest, "wrong type for end {}", hdr[1])
+	(version, what, id, conlen) = std.get(utilfcgi.readrecord(sock, con[:]))
+	testr.check(ctx, what == utilfcgi.EndRequest, "wrong type for end {}", what)
 
-	std.try(std.read(sock, hdr[:]))
-	testr.check(ctx, hdr[4] == 0, "wrong protocol status {}", hdr[4])
+	buf = con[:conlen]
+	testr.check(ctx, buf[4] == 0, "wrong protocol status {}", buf[4])
 
-	std.slfree(buf)
 	std.close(sock)
 }
 

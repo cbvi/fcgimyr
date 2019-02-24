@@ -4,6 +4,7 @@ pkg utilfcgi =
 	type rtype			= byte
 	type protocolstatus		= byte
 
+	const Contentmax		= 65535
 	const Empty			= ""
 
 	const Headerlen 		: std.size = 8
