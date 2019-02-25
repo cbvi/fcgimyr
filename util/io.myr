@@ -5,7 +5,7 @@ use "records"
 
 pkg utilfcgi =
 	const sendrecord	: (fd : std.fd, what : rtype, id : uint16, content : byte[:] -> bool)
-	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((byte, rtype, uint16, std.size)))
+	const readrecord	: (fd : std.fd, content : byte[:] -> std.option((byte[:], byte, rtype, uint16)))
 	const readheader	: (fd : std.fd -> std.option((byte, rtype, uint16, std.size, std.size)))
 ;;
 
@@ -69,7 +69,7 @@ const readrecord = {fd, content
 	| `std.Err _: goto err
 	;;
 
-	-> `std.Some (version, what, id, conlen)
+	-> `std.Some (content[:conlen], version, what, id)
 
 :err
 	-> `std.None

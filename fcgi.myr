@@ -39,11 +39,11 @@ const readrequest = {req
 	stdin = std.mksb()
 
 	while true
-		var version, what, id, conlen
+		var version, what, id
 
 		match utilfcgi.readrecord(req.fd, content[:])
 		| `std.Some res:
-			(version, what, id, conlen) = res
+			(buf, version, what, id) = res
 		| `std.None:
 			err = `Econn
 			goto err
@@ -59,15 +59,13 @@ const readrequest = {req
 			goto err
 		;;
 
-		buf = content[:conlen]
-
 		match what
 		| utilfcgi.BeginRequest:
 			req.id = id
 		| utilfcgi.Params:
 			std.sbputs(params, buf)
 		| utilfcgi.Stdin:
-			if conlen == 0
+			if buf.len == 0
 				break
 			;;
 			std.sbputs(stdin, buf)
