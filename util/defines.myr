@@ -15,6 +15,7 @@ pkg utilfcgi =
 	const Params			: rtype = 4
 	const Stdin			: rtype = 5
 	const Stdout			: rtype = 6
+	const Stderr			: rtype = 7
 	const Data			: rtype = 8
 	const GetValues			: rtype = 9
 	const GetValuesResult		: rtype = 10

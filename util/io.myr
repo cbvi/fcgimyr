@@ -34,6 +34,23 @@ const sendrecord = {fd, what, id, content
 		if !sendrecord(fd, what, id, content)
 			goto err
 		;;
+	elif isstream(what)
+		prepareheader(header[:], what, id, utilfcgi.Empty.len)
+		match std.writeall(fd, header[:])
+		| `std.Ok sz:
+			if sz < header.len
+				goto err
+			;;
+		| `std.Err _: goto err
+		;;
+
+		match std.write(fd, utilfcgi.Empty)
+		| `std.Ok sz:
+			if sz < utilfcgi.Empty.len
+				goto err
+			;;
+		| `std.Err _: goto err
+		;;
 	;;
 
 	-> true

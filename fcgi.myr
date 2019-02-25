@@ -18,11 +18,6 @@ const respond = {req, data
 		goto short
 	;;
 
-	/* empty stdout record */
-	if !utilfcgi.sendrecord(req.fd, utilfcgi.Stdout, req.id, utilfcgi.Empty)
-		goto short
-	;;
-
 	utilfcgi.endrequestdata(buf[:], 0, utilfcgi.RequestComplete)
 
 	if !utilfcgi.sendrecord(req.fd, utilfcgi.EndRequest, req.id, buf[:])

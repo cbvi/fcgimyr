@@ -5,6 +5,7 @@ use "defines"
 pkg utilfcgi =
 	const prepareheader	: (hdr : byte[:], what : rtype, id : uint16, conlen : uint16 -> void)
 	const endrequestdata	: (buf : byte[:], appstatus : uint32, protocolstatus : protocolstatus -> void)
+	const isstream		: (what : rtype -> bool)
 ;;
 
 const prepareheader = {hdr, what, id, conlen
@@ -20,4 +21,15 @@ const endrequestdata = {buf, appstatus, protocolstatus
 	std.putbe32(buf[:4], appstatus)
 	buf[4] = (protocolstatus : byte)
 	buf[5] = buf[6] = buf[7] = 0	/* reserved */
+}
+
+const isstream = {what
+	match what
+	| Params:	-> true
+	| Stdin:	-> true
+	| Stdout:	-> true
+	| Stderr:	-> true
+	| Data:		-> true
+	| _:		-> false
+	;;
 }
