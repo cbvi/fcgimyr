@@ -14,7 +14,7 @@ const sendrecord = {fd, what, id, content
 	var sendempty
 	var len
 
-	sendempty = isstream(what)
+	sendempty = isstream(what) && content.len > 0
 
 	while true
 		len = content.len > Contentmax ? Contentmax : content.len
