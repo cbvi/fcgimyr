@@ -1,0 +1,88 @@
+Summary
+-------
+
+FastCGI implemented in Myrddin
+
+
+pkg fcgi =
+	const announce		: (ds : byte[:] -> std.result(server#, error))
+	const respond		: (req : request#, data : byte[:] -> std.result(void, error))
+	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
+	const shutdown		: (srv : server# -> void)
+
+	type server = struct
+		running	: bool
+	;;
+
+	type request = struct
+		params	: (byte[:], byte[:])[:]
+		stdin	: byte[:]
+	;;
+
+	type error = union
+		`Eversion byte
+		`Eshort
+		`Etype utilfcgi.rtype
+		`Econn
+		`Emis
+	;;
+;;
+
+
+Setup
+-------
+
+	const announce		: (ds : byte[:] -> std.result(server#, error))
+
+Creates a server. The parameter `ds` is a string in the Plan9 dial string
+format used by `std.dial`; "proto!host!service"
+
+	// creates a tcp server on localhost port 8080
+	srv = std.try(fcgi.announce("tcp!localhost!8080"))
+
+	// creates a server that communicates over a unix socket path
+	srv = std.try(fcgi.announce("unix!/var/run/fcgi.sock"))
+
+
+Startup
+-------
+
+	const serve		: (srv : server#, fn : (req : request# -> void) -> void)
+
+Starts the server loop. Each request is handled by the callback `fn`.
+
+	const handler = {req
+		var data
+
+		data = "Content-Type\r\n\r\nHello world"
+		std.try(fcgi.respond(req, data))
+	}
+
+	fcgi.serve(srv, handler)
+	// blocks here and begins handling requests
+
+
+Fired up
+-------
+
+	const respond		: (req : request#, data : byte[:] -> std.result(void, error))
+
+The callback passed to `serve` must handle and respond to requests.
+
+
+Shutup
+-------
+
+	const shutdown		: (srv : server# -> void)
+
+Terminates the server, allows `serve` to unblock and frees the `srv` object.
+This could be called in a signal handler to allow the server to exit cleanly.
+
+	var act, oact
+
+	act = [
+		.handler = ({
+			fcgi.shutdown(srv)
+		} : byte#)
+	]
+	sys.sigaction(sys.Sigint, &act, &oact)
