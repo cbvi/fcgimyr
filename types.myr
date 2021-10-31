@@ -2,7 +2,7 @@ use std
 use utilfcgi
 
 pkg fcgi =
-	pkglocal type error = union
+	type error = union
 		`Eversion byte
 		`Eshort
 		`Etype utilfcgi.rtype
@@ -10,12 +10,12 @@ pkg fcgi =
 		`Emis
 	;;
 
-	pkglocal type server = struct
+	type server = struct
 		ann	: std.announce#
 		running	: bool
 	;;
 
-	pkglocal type request = struct
+	type request = struct
 		id	: uint16
 		fd	: std.fd
 		params	: (byte[:], byte[:])[:]
