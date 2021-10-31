@@ -20,11 +20,11 @@ pkg fcgi =
 	;;
 
 	type error = union
-		`Eversion byte
-		`Eshort
-		`Etype utilfcgi.rtype
-		`Econn
-		`Emis
+		`Eversion byte		// unknown FastCGI version provided
+		`Eshort			// Short write
+		`Etype utilfcgi.rtype	// Invalid type in request
+		`Econn			// Connection failed
+		`Emis			// Request ID mismatch
 	;;
 ;;
 
@@ -42,6 +42,8 @@ format used by `std.dial`; "proto!host!service"
 
 	// creates a server that communicates over a unix socket path
 	srv = std.try(fcgi.announce("unix!/var/run/fcgi.sock"))
+
+If the given dial string cannot be announced on, `Econn` is returned.
 
 
 Startup
@@ -68,6 +70,8 @@ Fired up
 	const respond		: (req : request#, data : byte[:] -> std.result(void, error))
 
 The callback passed to `serve` must handle and respond to requests.
+
+`Eshort` is returned if any part of the data string could not be sent
 
 
 Shutup
